@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+
+# artefatos de experimento (versionar apenas o que virar figura do paper)
+results/raw/*
+!results/raw/.gitkeep
+results/figures/*
+!results/figures/.gitkeep
+*.log
+*.pt
+*.safetensors
+.ipynb_checkpoints/
+data/
+
+TODO.md
+ews_ideia.md
+descobertas_historico.md
+# reestruturacao: artefatos de execucao e notas de ambiente
+var/
+results/figs/*
+!results/figs/.gitkeep
+
+.ruff_cache
