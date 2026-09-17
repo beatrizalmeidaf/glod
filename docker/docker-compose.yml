@@ -1,0 +1,31 @@
+# docker compose -f docker/docker-compose.yml run --rm ews make grid MODEL=Qwen/Qwen3-4B
+#
+# EWS_RESULTS_HOST e EWS_HF_CACHE_HOST apontam para os diretorios da maquina; o
+# default reproduz o layout da DGX (resultados e cache no disco local, nao no /raid,
+# que tem cota de 500G por usuario).
+services:
+  ews:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ews:latest
+    environment:
+      EWS_RESULTS: /results
+      EWS_HF_CACHE: /hf_cache
+      EWS_RAW: /workspace/results/raw
+      EWS_DATA: /workspace/data
+      EWS_FIGS: /workspace/results/figs
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - ..:/workspace
+      - ${EWS_RESULTS_HOST:-/local/${USER}/ews_results/fid}:/results
+      - ${EWS_HF_CACHE_HOST:-/local/${USER}/hf_cache}:/hf_cache
+    shm_size: "16gb"
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
