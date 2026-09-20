@@ -20,6 +20,7 @@ import numpy as np
 import torch
 
 from ews.paths import OUT as ROOT
+from ews.paths import corpus_of
 AN = ROOT / "analysis"
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -132,6 +133,8 @@ def cmd_law(args) -> None:
                 p["iso_pred_sub"] = pred
                 p["obs_over_iso"] = (p.get("flip_sub", p["flip"])) / pred if pred > 0 else float("nan")
                 p["sigma"] = s
+        for p in rows:
+            p["corpus"] = corpus_of(rs)
         fits[rs] = {"top": fit_loglog(rows), "full_sub": fit_loglog(rows, "kl_full_sub", "flip_sub")}
         print(f"\n=== {rs}: {fits[rs]}")
         print(f"{'config':34s} {'familia':10s} {'flip%':>7s} {'KL':>8s} {'KLfull':>8s} {'k=f/sqrtKL':>10s} {'obs/iso':>7s}")
@@ -140,8 +143,14 @@ def cmd_law(args) -> None:
                   f"{p.get('kl_full_sub', float('nan')):8.4f} {p['flip']/max(p['kl'],1e-12)**.5:10.3f} "
                   f"{p.get('obs_over_iso', float('nan')):7.2f}")
         allrows += rows
-    pooled = fit_loglog(allrows)
-    print("\nPOOLED (todos os modelos):", pooled)
+    # o ajuste conjunto do paper e o do corpus mix; cada corpus novo tem o seu. Juntar
+    # tudo mudaria a inclinacao reportada sem ninguem ter pedido.
+    pooled = fit_loglog([p for p in allrows if p["corpus"] == "mix"])
+    pooled_by_corpus = {c: fit_loglog([p for p in allrows if p["corpus"] == c])
+                        for c in sorted({p["corpus"] for p in allrows})}
+    print("\nPOOLED (corpus do paper, mix):", pooled)
+    for c, f in pooled_by_corpus.items():
+        print(f"  POOLED {c}: {f}")
     fams = {}
     for p in allrows:
         if "obs_over_iso" in p and p["kl"] < 0.5:
@@ -151,7 +160,8 @@ def cmd_law(args) -> None:
     trunc = [(p["kl_top_sub"], p["kl_full_sub"]) for p in allrows if "kl_full_sub" in p]
     ratio = np.array([b / a for a, b in trunc if a > 1e-4])
     print("KL completo / KL top-64 (subconjunto): mediana %.3f, p5 %.3f, p95 %.3f" % tuple(np.percentile(ratio, [50, 5, 95])))
-    (AN / "law.json").write_text(json.dumps({"rows": allrows, "fits": fits, "pooled": pooled}, indent=1))
+    (AN / "law.json").write_text(json.dumps({"rows": allrows, "fits": fits, "pooled": pooled,
+                                             "pooled_by_corpus": pooled_by_corpus}, indent=1))
 
 
 # ---------------------------------------------------------------- theory
