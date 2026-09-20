@@ -115,11 +115,16 @@ def build_prompts_mmlu_en(tokenizer, n: int, seed: int, cache_dir: str) -> list[
 
 
 def build_prompts_wikitext(tokenizer, n: int, seed: int, cache_dir: str,
-                           prompt_tokens: int = 48) -> list[dict]:
-    """Continuacao de texto livre: o prompt sao os primeiros tokens do paragrafo.
+                           prompt_tokens: int = 64) -> list[dict]:
+    """Continuacao de texto livre: o prompt pede para continuar um trecho da wikitext.
 
     Sem gabarito (gold vazio): as metricas por token valem, as de tarefa nao. E o
-    corpus que mede a lei fora de prompts com instrucao e resposta curta.
+    corpus que mede a lei fora de prompts de pergunta e resposta curta.
+
+    O trecho vai DENTRO do chat template, como instrucao. A primeira versao passava o
+    texto cru e, com greedy, os modelos instruct entravam em laco (99-100% das
+    sequencias dos Gemma repetiam mais da metade dos 4-gramas): margens enormes, kappa
+    10x menor, e um corpus que media o laco e nao a lei.
     """
     from datasets import load_dataset
 
@@ -133,11 +138,27 @@ def build_prompts_wikitext(tokenizer, n: int, seed: int, cache_dir: str,
         ids = tokenizer(ds[i]["text"].strip(), add_special_tokens=False)["input_ids"]
         if len(ids) <= prompt_tokens:
             continue
-        # texto cru de proposito: aplicar o chat template mudaria a distribuicao
-        out.append({"prompt": tokenizer.decode(ids[:prompt_tokens]), "gold": "",
-                    "source": "wikitext"})
+        text = ("Continue the following encyclopedia text in the same style, with new "
+                "information. Write one paragraph.\n\n" + tokenizer.decode(ids[:prompt_tokens]))
+        out.append({"prompt": _chat(tokenizer, text), "gold": "", "source": "wikitext"})
     return out
 
+
+
+def repetition_stats(gen_ids: list[list[int]], n: int = 4) -> dict:
+    """Fracao de n-gramas repetidos por sequencia gerada.
+
+    Um corpus greedy em que o modelo entra em laco mede o laco, nao a lei: as margens
+    ficam enormes e kappa despenca. `degenerate_frac` e a fracao de sequencias com mais
+    da metade dos n-gramas repetidos.
+    """
+    rates = []
+    for g in gen_ids:
+        ng = [tuple(g[i:i + n]) for i in range(len(g) - n + 1)]
+        rates.append(1 - len(set(ng)) / len(ng) if ng else 0.0)
+    rates.sort()
+    return {"median_repeat": rates[len(rates) // 2] if rates else 0.0,
+            "degenerate_frac": sum(r > 0.5 for r in rates) / max(len(rates), 1)}
 
 # --------------------------------------------------------------- geracao
 @dataclass
