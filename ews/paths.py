@@ -47,6 +47,21 @@ def ref_slug(model: str, revision: str | None = None, *, corpus: str = DEFAULT_C
     return s
 
 
+def corpus_of(ref: str) -> str:
+    """Corpus de uma referencia no disco: `Qwen3-4B__mmlu_en__fp32` -> `mmlu_en`, sem sufixo -> `mix`."""
+    from ews.corpora.registry import CORPORA
+
+    for part in ref.split("__")[1:]:
+        if part in CORPORA:
+            return part
+    return DEFAULT_CORPUS
+
+
+def model_of(ref: str) -> str:
+    """Modelo de uma referencia no disco: `Qwen3-4B__mmlu_en__fp32` -> `Qwen3-4B`."""
+    return ref.split("__")[0]
+
+
 def corpus_path(ref: str) -> Path:
     return OUT / "corpora" / f"{ref}.json"
 
