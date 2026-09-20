@@ -22,6 +22,7 @@ import math
 import numpy as np
 
 from ews.paths import OUT as ROOT
+from ews.paths import corpus_of, model_of
 AN = ROOT / "analysis"
 
 
@@ -225,6 +226,64 @@ def seed_check() -> dict:
     return out
 
 
+def _ci(v: list[float]) -> str:
+    if not v:
+        return "-"
+    if len(v) < 2:
+        return f"{v[0]:.2f}x (n=1)"
+    se = np.std(v, ddof=1) / math.sqrt(len(v))
+    return f"{np.mean(v):.2f}x [{np.mean(v) - 1.96*se:.2f}, {np.mean(v) + 1.96*se:.2f}] (n={len(v)})"
+
+
+def corpus_summary(by_corpus: dict, fp32: dict, seeds: dict) -> dict:
+    """A pergunta da varredura: kappa e a razao do ataque mudam com o corpus?
+
+    Tudo em tokens de teste. Razao = kappa do ataque / kappa honesto no mesmo KL (+-35%),
+    melhor variante do atacante por (modelo, orcamento), sementes extras fora.
+    """
+    out = {}
+    order = ["mix"] + sorted(c for c in by_corpus if c != "mix")
+    print("\n  POR CORPUS (mix = corpus do paper): razao kappa_ataque / kappa_honesto, pareada por KL, teste")
+    print(f"    {'corpus':9s} {'maligno':30s} {'benigno':30s} {'fp32-bf16 malig.':>17s} "
+          f"{'desvio sementes':>16s} {'sem norma':>10s}")
+    for c in order:
+        if c not in by_corpus:
+            continue
+        g = by_corpus[c]
+        d32 = [pt["fp32"] - pt["bf16"] for m, v in fp32.items() if m != "deltas" and corpus_of(m) == c
+               for k, pt in v["points"].items() if k.startswith("malign")]
+        sd = [float(np.std(v, ddof=1)) for k, v in seeds["seeds"].items()
+              if corpus_of(k.split("/")[0]) == c and "/malign" in k and len(v) > 1]
+        nn = [v["no_norm"] - v["with_norm"] for k, v in seeds["no_norm"].items()
+              if corpus_of(k.split("/")[0]) == c and "/malign" in k]
+        row = {"malign": g["malign"], "benign": g["benign"], "fp32_delta_malign": d32,
+               "seed_sd_malign": sd, "no_norm_delta_malign": nn}
+        out[c] = row
+        f = lambda v: f"{np.mean(v):+.3f} (n={len(v)})" if v else "-"
+        print(f"    {c:9s} {_ci(g['malign']):30s} {_ci(g['benign']):30s} {f(d32):>17s} "
+              f"{(f'{np.median(sd):.3f} (n={len(sd)})' if sd else '-'):>16s} {f(nn):>10s}")
+
+    # tabela modelo x corpus: kappa honesto (teste) e razao media do maligno
+    models = sorted({pt["model"] for g in by_corpus.values() for pt in g["points"]})
+    print("\n  kappa honesto (teste) | razao do maligno (media dos orcamentos), por modelo x corpus")
+    print("    " + f"{'modelo':26s}" + "".join(f"{c:>18s}" for c in order if c in by_corpus))
+    table = {}
+    for m in models:
+        cells = []
+        for c in order:
+            if c not in by_corpus:
+                continue
+            ref = m if c == "mix" else f"{m}__{c}"
+            kh = honest_test(ref)[0]
+            rr = [pt["ratio"] for pt in by_corpus[c]["points"] if pt["model"] == m and pt["mode"] == "malign"]
+            table.setdefault(m, {})[c] = {"kappa_honest_test": kh, "malign_ratio": rr}
+            cells.append(("-" if math.isnan(kh) else f"{kh:.3f}") + " | " +
+                         (f"{np.mean(rr):.2f}x" if rr else "  -  "))
+        print("    " + f"{m[:26]:26s}" + "".join(f"{x:>18s}" for x in cells))
+    out["by_model"] = table
+    return out
+
+
 def main() -> int:
     fd = json.loads((AN / "flipdirs.json").read_text()) if (AN / "flipdirs.json").exists() else {}
     geo = {k.split("/")[-1]: v for k, v in fd.items()}
@@ -288,10 +347,18 @@ def main() -> int:
                 if better:
                     best_var[k] = x
     paired = {"malign": [], "benign": []}
-    for (model, mode, _b), x in sorted(best_var.items()):
+    by_corpus: dict = {}
+    for (model, mode, b), x in sorted(best_var.items()):
         kh, nh2 = honest_near_kl(model, x[1])
         if math.isnan(kh):
             continue
+        c = corpus_of(model)
+        by_corpus.setdefault(c, {"malign": [], "benign": [], "points": []})
+        by_corpus[c][mode].append(x[5] / kh)
+        by_corpus[c]["points"].append({"model": model_of(model), "mode": mode, "budget": b,
+                                       "kl": x[1], "ratio": x[5] / kh})
+        if c != "mix":
+            continue   # o agregado historico e o do corpus do paper; os outros saem em corpus_summary
         paired[mode].append(x[5] / kh)
         print(f"    {model[:22]:22s} {x[1]:7.4f} {mode:8s} {x[5]:7.3f} {kh:14.3f} (n={nh2}) "
               f"{x[5]/kh:7.2f}x")
@@ -300,7 +367,8 @@ def main() -> int:
             se = np.std(v, ddof=1) / math.sqrt(len(v)) if len(v) > 1 else 0.0
             print(f"    {mode:8s}: {np.mean(v):.2f}x  IC95 [{np.mean(v) - 1.96*se:.2f}, "
                   f"{np.mean(v) + 1.96*se:.2f}]  min {min(v):.2f} max {max(v):.2f}  (n={len(v)})")
-    out["paired_by_kl"] = paired
+    out["paired_by_kl"] = paired          # so o corpus do paper (mix): e o numero da Secao 4
+    out["paired_by_corpus"] = by_corpus
 
     print("\n  comparacao no MESMO conjunto de teste (tokens que o ataque nunca viu):")
     tt_m, tt_b = [], []
@@ -394,6 +462,7 @@ def main() -> int:
                                         "allocation_factor": 1 / (2 * f0), "n": len(fr)}
     out["fp32_check"] = fp32_check()
     out["seed_check"] = seed_check()
+    out["corpus_summary"] = corpus_summary(by_corpus, out["fp32_check"], out["seed_check"])
     er = [(r["model"], r["eff_rank"], r["H"], r["gain_rank1"]) for r in rows if r["eff_rank"]]
     if er:
         print("\n  geometria que explica a assimetria (direcoes de flip u_t = W_U[i1] - W_U[i2]):")
