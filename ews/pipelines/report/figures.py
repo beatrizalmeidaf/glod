@@ -21,6 +21,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ews.paths import OUT as ROOT
+from ews.paths import corpus_of
+
+#: corpora mostrados nas figuras (default: so o do paper). `--corpus all` mostra todos.
+SHOWN: set[str] | None = {"mix"}
+
+
+def shown(ref: str) -> bool:
+    return "__fp32" not in ref and (SHOWN is None or corpus_of(ref) in SHOWN)
+
 AN = ROOT / "analysis"
 from ews.paths import FIGS as FIG  # noqa: E402  (saida via EWS_FIGS)
 FIG.mkdir(parents=True, exist_ok=True)
@@ -51,7 +60,8 @@ def save(fig, name: str) -> None:
 
 def fig1() -> None:
     law = json.loads((AN / "law.json").read_text())
-    rows = [r for r in law["rows"] if r["ref"] == r["model"] and r["family"] != "outro modelo"]
+    rows = [r for r in law["rows"] if r["ref"] == r["model"] and r["family"] != "outro modelo"
+            and shown(r["ref"])]
     
     # Aumentando a largura para acomodar a legenda enorme fora do grafico
     fig, ax = plt.subplots(figsize=(6.5, 4.0))
@@ -66,12 +76,14 @@ def fig1() -> None:
         
     x = np.logspace(-3.4, 0.35, 60)
     for ref, f in law["fits"].items():
-        if "__fp32" in ref:
+        if not shown(ref):
             continue
         ax.plot(x, np.exp(f["top"]["intercept"] + f["top"]["slope"] * np.log(x)),
                 color="k", lw=0.4, alpha=0.2)
                 
-    p = law["pooled"]
+    # ajuste conjunto do corpus mostrado (o do paper por default); com varios, o do mix
+    one = next(iter(SHOWN)) if SHOWN is not None and len(SHOWN) == 1 else "mix"
+    p = law.get("pooled_by_corpus", {}).get(one, law["pooled"])
     ax.plot(x, np.exp(p["intercept"] + p["slope"] * np.log(x)), color="k", lw=1.6,
             label=f"ajuste conjunto: inclinação {p['slope']:.2f}")
             
@@ -79,7 +91,8 @@ def fig1() -> None:
     mk = {"single_layer": ("*", "1 camada (ataque)", 70),
           "multi_malign": ("P", "multicamada (ataque)", 45)}
     for key, (m, lab, sz) in mk.items():
-        pts = [(x_[1], x_[2]) for r in adv["models"].values() for x_ in r.get(key, [])]
+        pts = [(x_[1], x_[2]) for ref, r in adv["models"].items() if shown(ref)
+               for x_ in r.get(key, [])]
         if pts:
             ax.scatter(*zip(*pts), marker=m, s=sz, facecolor="none", edgecolor="crimson",
                        linewidths=1.0, label=lab, zorder=5)
@@ -112,8 +125,8 @@ def fig2() -> None:
     dm = json.loads((AN / "domain.json").read_text())
     fig, ax = plt.subplots(figsize=(4.0, 3.4))
     
-    xs = [r["p_gap_lt1"] for r in sl if "__fp32" not in r["ref"]]
-    ys = [r["kappa"] for r in sl if "__fp32" not in r["ref"]]
+    xs = [r["p_gap_lt1"] for r in sl if shown(r["ref"])]
+    ys = [r["kappa"] for r in sl if shown(r["ref"])]
     ax.scatter(xs, ys, s=16, color="#1f77b4", label=f"modelos densos (n={len(xs)})")
     
     c = np.polyfit(xs, ys, 1)
@@ -123,7 +136,7 @@ def fig2() -> None:
     
     for dom, mk, col in (("gsm8k", "^", "#2ca02c"), ("mmlu_pt", "s", "#d62728")):
         p = [(q["p_gap_lt1"], q["kappa"]) for q in dm["points"]
-             if q["dom"] == dom and "__fp32" not in q["ref"]]
+             if q["dom"] == dom and shown(q["ref"])]
         ax.scatter(*zip(*p), s=14, marker=mk, color=col, alpha=0.85, label=f"por domínio: {dom}")
                    
     ax.set_xlabel("fração de tokens com gap top1−top2 < 1 nat")
@@ -282,7 +295,11 @@ def main(argv=None) -> int:
     figs = {"fig1": fig1, "fig2": fig2, "fig3": fig3, "fig4": fig4, "fig5": fig5, "fig6": fig6}
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--only", nargs="+", choices=sorted(figs), default=sorted(figs))
+    p.add_argument("--corpus", nargs="+", default=["mix"],
+                   help="corpora nas figuras: mix (paper, default), outros ids, ou 'all'")
     args = p.parse_args(argv)
+    global SHOWN
+    SHOWN = None if "all" in args.corpus else set(args.corpus)
     rc = 0
     for name in args.only:
         try:
