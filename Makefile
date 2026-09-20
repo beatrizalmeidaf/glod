@@ -9,7 +9,7 @@
 MODEL   ?= Qwen/Qwen3-4B
 DEVICE  ?= cuda:0
 CORPUS  ?= mix
-CONFIGS ?= bf16 g4 gptq4 awq4 sgpt50 wanda50 kv4 kv3
+CONFIGS ?= u8 u6 u5 u4 kv4 kv3 mag20 g4 gptq4 awq4 sgpt50 wanda50
 KL      ?= 0.02 0.05
 STEPS   ?= 400
 RANK    ?= 16
