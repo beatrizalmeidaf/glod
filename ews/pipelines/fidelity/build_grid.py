@@ -41,7 +41,7 @@ from ews.core.elastic_depth import make_elastic_depth
 from ews.core.fidelity import score_fidelity, subset_index
 from ews.core.model_loader import load_model
 from ews.corpora.registry import build_records
-from ews.corpora.token_oracle import GeneratedCorpus, generate_greedy
+from ews.corpora.token_oracle import GeneratedCorpus, generate_greedy, repetition_stats
 from ews.paths import CACHE_DIR as DEFAULT_CACHE_DIR
 from ews.paths import OUT, add_corpus_arg, ref_slug
 
@@ -58,9 +58,16 @@ def stage_gen(args) -> None:
     records = build_records(args.corpus, loaded.tokenizer, args.n_prompts, args.seed,
                             f"{args.cache_dir}/datasets")
     corpus = generate_greedy(loaded, records, max_new_tokens=args.max_new_tokens, batch_size=args.gen_batch)
+    rep = repetition_stats(corpus.gen_ids)
+    LOGGER.info("repeticao: mediana %.2f de 4-gramas repetidos, %.0f%% das sequencias degeneradas",
+                rep["median_repeat"], 100 * rep["degenerate_frac"])
+    if rep["degenerate_frac"] > args.max_degenerate and not args.allow_degenerate:
+        raise SystemExit(f"corpus degenerado: {100 * rep['degenerate_frac']:.0f}% das sequencias em laco "
+                         f"(limite {100 * args.max_degenerate:.0f}%). Nada foi salvo. Use --allow-degenerate "
+                         "para gravar mesmo assim.")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"model": args.model, "revision": args.revision,
-                                "corpus": args.corpus, **corpus.to_dict()}))
+                                "corpus": args.corpus, "repetition": rep, **corpus.to_dict()}))
     LOGGER.info("corpus %s: %d seqs, %d tokens", path, len(corpus.gen_ids), corpus.n_tokens)
 
 
@@ -202,6 +209,9 @@ def main(argv=None) -> int:
     p.add_argument("--out", default=str(OUT))
     p.add_argument("--logits-fp32", action="store_true", help="lm_head em float32 (sem grade/empates do bf16)")
     add_corpus_arg(p)
+    p.add_argument("--max-degenerate", type=float, default=0.10,
+                   help="fracao maxima de sequencias em laco (>50%% de 4-gramas repetidos) aceita no gen")
+    p.add_argument("--allow-degenerate", action="store_true")
     args = p.parse_args(argv)
     globals()["OUT"] = Path(args.out)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
