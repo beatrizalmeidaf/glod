@@ -370,8 +370,9 @@ def cmd_prop(args) -> None:
                         "anisotropy_A": aniso, "pi_tie": pi_tie})
         out[rs] = {"rho0_cont": rho0, "tie_mass": tie.double().mean().item(), "configs": res}
         r = [x["ratio"] for x in res if x["kl"] < 0.5]
+        med_str = f"{np.median(r):.2f} [{np.min(r):.2f},{np.max(r):.2f}]" if r else "-"
         print(f"\n=== {rs}: rho_c(0) {rho0:.4f}/nat | empates {100*out[rs]['tie_mass']:.2f}% | obs/pred mediana "
-              f"{np.median(r):.2f} [{np.min(r):.2f},{np.max(r):.2f}] n={len(r)}")
+              f"{med_str} n={len(r)}")
         for x in res:
             if x["kl"] < 0.6:
                 print(f"   {x['config'][:24]:24s} {x['family'][:9]:9s} KL {x['kl']:.4f} flip {100*x['flip']:6.2f}% "
