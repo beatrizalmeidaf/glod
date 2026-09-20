@@ -16,7 +16,10 @@
 set -euo pipefail
 
 MODEL="" CORPUS="mix" DEVICE="cuda:0" PROFILE="paper" DRY=0 GLOBAL=1 FORCE=0
-CONFIGS=${CONFIGS:-"g4 gptq4 awq4 sgpt50 wanda50 kv4 kv3"}
+# a grade precisa cobrir o KL BAIXO: o ataque roda em KL 0,02 e 0,05 e e pareado com
+# compressores honestos a +-35% do mesmo KL. So com 4 bits e poda 50% (KL 0,03-0,9) o
+# pareamento descartava metade dos pontos; RTN 8/6/5 bits e magnitude 20% cobrem o baixo.
+CONFIGS=${CONFIGS:-"u8 u6 u5 u4 kv4 kv3 mag20 g4 gptq4 awq4 sgpt50 wanda50"}
 KL=${KL:-"0.02 0.05"}
 STEPS=${STEPS:-400}
 RANK=${RANK:-16}
@@ -97,13 +100,19 @@ LOG="$LOGDIR/$(basename "$MODEL")__${CORPUS}__${PROFILE}.log"
 # guarda cada config em .pt), entao o pior caso e repetir a etapa em andamento.
 STAMPS=${EWS_STAMPS:-${EWS_RESULTS:-.}/_stamps}
 mkdir -p "$STAMPS"
-# O marco identifica a ETAPA, nao a GPU: o --device sai do hash, senao a mesma etapa
-# rodada em cuda:2 local e em cuda:0 no Slurm contaria como duas e repetiria o trabalho.
-stamp_of() { printf '%s' "$1" | sed 's/--device [^ ]*//' | sha1sum | cut -c1-16; }
+# O marco identifica a ETAPA: saem do hash a GPU (--device) e o interpretador (python3
+# ou /usr/bin/python3), senao a mesma etapa conta como duas e o trabalho se repete.
+stamp_of() {
+  printf '%s' "$1" | sed -e 's/--device [^ ]*//' -e 's#^[^ ]*python[0-9.]* -m ews#ews#' \
+      | sha1sum | cut -c1-16
+}
 
 echo "== $MODEL | corpus=$CORPUS | $DEVICE | perfil=$PROFILE | log=$LOG"
 echo "   marcos em $STAMPS (--force refaz tudo)"
 rc_total=0
+# tee por substituicao de processo, e nao `{ ... } | tee`: o bloco num pipe roda num
+# subshell, rc_total=1 se perdia e todo par terminava com status 0 ("OK") mesmo com erro.
+exec > >(tee -a "$LOG") 2>&1
 {
   echo "### inicio: $(date -Is) | host=$(hostname) | job=${SLURM_JOB_ID:-nenhum}"
   for c in "${cmds[@]}"; do
@@ -122,5 +131,5 @@ rc_total=0
     fi
   done
   echo "### fim: $(date -Is) | rc=$rc_total"
-} 2>&1 | tee -a "$LOG"
+}
 exit $rc_total
