@@ -27,7 +27,7 @@ Hoje temos dezenas de técnicas para comprimir pesos de LLMs e acelerar a infer�
   <h3><strong>flips ≈ κ · √KL</strong></h3>
 </div>
 
-**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher, $\mathrm{KL} = \tfrac12\,\delta^\top F\,\delta + O(\|\delta\|^3)$), enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\mathrm{KL}}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
+**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher, $\mathrm{KL} = \frac{1}{2} \delta^\top F \delta + O(\lVert\delta\rVert^3)$), enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\mathrm{KL}}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
 
 **O que é empírico** é que um **único** κ descreve arredondamento, poda, quantização de KV-cache, remoção de camadas e ruído isotrópico do mesmo modelo — o fator de proporcionalidade varia apenas 2,7% (CV mediano) entre famílias dentro de uma referência.
 
