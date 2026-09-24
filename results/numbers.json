@@ -1,0 +1,301 @@
+{
+ "by_corpus": {
+  "mix": {
+   "n_refs": 16,
+   "n_configs": 351,
+   "slope": 0.5115344166127913,
+   "r2": 0.9595642627321334,
+   "slope_min": 0.4777202354080586,
+   "slope_max": 0.56285916096941,
+   "r2_min": 0.990243287626661,
+   "kappa_min": 0.18826992034456824,
+   "kappa_max": 0.3547483033553,
+   "n_kappa": 16,
+   "models": [
+    "Mistral-7B-Instruct-v0.3",
+    "Mistral-Small-24B-Instruct-2501",
+    "OLMo-2-0425-1B",
+    "OLMo-2-0425-1B-Instruct",
+    "OLMo-2-1124-13B-Instruct",
+    "OLMo-2-1124-7B-Instruct",
+    "Phi-3.5-mini-instruct",
+    "Qwen2.5-7B-Instruct",
+    "Qwen3-14B",
+    "Qwen3-4B",
+    "Qwen3-8B",
+    "gemma-3-12b-it",
+    "gemma-3-1b-it",
+    "gemma-3-27b-it",
+    "gemma-3-4b-it",
+    "phi-4"
+   ]
+  },
+  "gsm8k": {
+   "n_refs": 8,
+   "n_configs": 96,
+   "slope": 0.5125290812981189,
+   "r2": 0.9541634519945944,
+   "slope_min": 0.5069784958609647,
+   "slope_max": 0.5776272680265692,
+   "r2_min": 0.9922102068695469,
+   "kappa_min": 0.12991282258416573,
+   "kappa_max": 0.24294485843349173,
+   "n_kappa": 8,
+   "models": [
+    "Mistral-7B-Instruct-v0.3",
+    "OLMo-2-0425-1B-Instruct",
+    "Phi-3.5-mini-instruct",
+    "Qwen3-14B",
+    "Qwen3-4B",
+    "gemma-3-12b-it",
+    "gemma-3-1b-it",
+    "gemma-3-4b-it"
+   ]
+  },
+  "mmlu_en": {
+   "n_refs": 8,
+   "n_configs": 96,
+   "slope": 0.48285978788106887,
+   "r2": 0.9371435065071577,
+   "slope_min": 0.48207393751035066,
+   "slope_max": 0.5323109162346534,
+   "r2_min": 0.9935862160189779,
+   "kappa_min": 0.21021433250015015,
+   "kappa_max": 0.45234968691100214,
+   "n_kappa": 8,
+   "models": [
+    "Mistral-7B-Instruct-v0.3",
+    "OLMo-2-0425-1B-Instruct",
+    "Phi-3.5-mini-instruct",
+    "Qwen3-14B",
+    "Qwen3-4B",
+    "gemma-3-12b-it",
+    "gemma-3-1b-it",
+    "gemma-3-4b-it"
+   ]
+  },
+  "wikitext": {
+   "n_refs": 9,
+   "n_configs": 108,
+   "slope": 0.46247903787052574,
+   "r2": 0.9305540251792157,
+   "slope_min": 0.472862779689508,
+   "slope_max": 0.5162081836269163,
+   "r2_min": 0.9958024051340891,
+   "kappa_min": 0.2709500360858253,
+   "kappa_max": 0.564576002494936,
+   "n_kappa": 9,
+   "models": [
+    "Mistral-7B-Instruct-v0.3",
+    "OLMo-2-0425-1B-Instruct",
+    "OLMo-2-1124-7B-Instruct",
+    "Phi-3.5-mini-instruct",
+    "Qwen3-14B",
+    "Qwen3-4B",
+    "gemma-3-12b-it",
+    "gemma-3-1b-it",
+    "gemma-3-4b-it"
+   ]
+  },
+  "wikitext_nat": {
+   "n_refs": 8,
+   "n_configs": 91,
+   "slope": 0.46769154689189224,
+   "r2": 0.9779471406581046,
+   "slope_min": 0.45938934022772593,
+   "slope_max": 0.49375795031625797,
+   "r2_min": 0.9942741612220576,
+   "kappa_min": 0.39020497728246845,
+   "kappa_max": 0.5595903653692962,
+   "n_kappa": 8,
+   "models": [
+    "Mistral-7B-Instruct-v0.3",
+    "OLMo-2-0425-1B",
+    "OLMo-2-0425-1B-Instruct",
+    "OLMo-2-1124-7B",
+    "OLMo-2-1124-7B-Instruct",
+    "Qwen2.5-72B-Instruct",
+    "Qwen3-4B",
+    "gemma-3-4b-it"
+   ]
+  }
+ },
+ "models_total": 18,
+ "configs_total": 742,
+ "families": [
+  "awq",
+  "camada",
+  "gauss",
+  "gptq",
+  "kv",
+  "magnitude",
+  "oficial",
+  "rtn",
+  "skip",
+  "sparsegpt",
+  "wanda"
+ ],
+ "law_mix": {
+  "slope": 0.5115344166127913,
+  "r2": 0.9595642627321334,
+  "n_configs": 351,
+  "n_refs": 16
+ },
+ "margins": {
+  "slope": 1.0985111311571962,
+  "intercept": 0.11332298849129992,
+  "r": 0.9915440623770045,
+  "n_generated": 41,
+  "resid_sd": 0.01231752381975247,
+  "n_natural": 8,
+  "natural_offset": -0.07977391697999608,
+  "natural_offset_sd": -6.476457293475662
+ },
+ "theory": {
+  "r_all": 0.9857372228238874,
+  "r_generated": 0.9801616587477672,
+  "n": 34,
+  "natural_offset": -0.024287670631660842,
+  "natural_offset_sd": -1.198983021375665,
+  "by_corpus": {
+   "mix": {
+    "A": 3.0722489875539387,
+    "rho0": 0.11264990841185074,
+    "ratio": 0.9566905619434336,
+    "n": 3
+   },
+   "mmlu_en": {
+    "A": 2.4624362685675374,
+    "rho0": 0.1448112209959622,
+    "ratio": 1.003988399959114,
+    "n": 8
+   },
+   "wikitext_nat": {
+    "A": 1.2812620972647122,
+    "rho0": 0.6216134102445909,
+    "ratio": 0.9265756761552659,
+    "n": 7
+   },
+   "wikitext": {
+    "A": 2.058232849543905,
+    "rho0": 0.22615771627787942,
+    "ratio": 0.988912063148039,
+    "n": 8
+   },
+   "gsm8k": {
+    "A": 3.6559845869786822,
+    "rho0": 0.06678398179108225,
+    "ratio": 1.0859201742910316,
+    "n": 8
+   }
+  }
+ },
+ "attack": {
+  "mix": {
+   "malign": [
+    1.1266739443528389,
+    0.05288594567404074,
+    13
+   ],
+   "benign": [
+    0.505715423517557,
+    0.03442697447459266,
+    12
+   ]
+  },
+  "gsm8k": {
+   "malign": [
+    1.1698393187646137,
+    0.05484850278755859,
+    13
+   ],
+   "benign": [
+    0.5494799455419673,
+    0.07396315262938616,
+    13
+   ]
+  },
+  "mmlu_en": {
+   "malign": [
+    0.9974366467557303,
+    0.09571111083465625,
+    11
+   ],
+   "benign": [
+    0.5581494864176408,
+    0.07324141183213333,
+    11
+   ]
+  },
+  "wikitext": {
+   "malign": [
+    1.0368609385883787,
+    0.0493654269859778,
+    12
+   ],
+   "benign": [
+    0.5901354530846954,
+    0.06819905206496493,
+    12
+   ]
+  },
+  "ceiling": {
+   "honest_fraction": 0.17417297969545054,
+   "sign_aligned_bound": 0.34834595939090107,
+   "allocation_factor": 2.8707093423691377,
+   "n": 66
+  }
+ },
+ "compound": {
+  "n_pairs": 98,
+  "n_models": 7,
+  "median_low": 0.7853725313051775,
+  "n_low": 56,
+  "median_high": 1.5230499350950653,
+  "n_high": 42,
+  "median_rel_err": 0.32029158948351033,
+  "n_err": 69
+ },
+ "spec": {
+  "greedy aceita/proposta   lei (so KL + kappa)": {
+   "r2": 0.9517311438470876,
+   "mape": 0.022171799480575138,
+   "n": 24
+  },
+  "greedy aceita/proposta   iid (flip medido)": {
+   "r2": 0.9400493288605084,
+   "mape": 0.029589646514182767,
+   "n": 24
+  },
+  "greedy aceita/proposta   seq (sequencia TF)": {
+   "r2": 0.9861983540408119,
+   "mape": 0.012840748644874547,
+   "n": 24
+  },
+  "greedy tokens/rodada     lei (so KL + kappa)": {
+   "r2": 0.9410895676280274,
+   "mape": 0.01902458317942657,
+   "n": 24
+  },
+  "greedy tokens/rodada     seq (sequencia TF)": {
+   "r2": 0.9804267687155689,
+   "mape": 0.01125804249158247,
+   "n": 24
+  },
+  "amostra aceita/proposta  1-TV (identidade)": {
+   "r2": 0.9206421384571085,
+   "mape": 0.0399017014797537,
+   "n": 24
+  },
+  "amostra E[min(1,p/q)]    1-TV (identidade)": {
+   "r2": 0.9487955307144905,
+   "mape": 0.012687586642217705,
+   "n": 24
+  },
+  "amostra tokens/rodada    1-TV (identidade)": {
+   "r2": 0.8872338717392577,
+   "mape": 0.03623250789418351,
+   "n": 24
+  }
+ }
+}
