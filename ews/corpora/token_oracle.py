@@ -145,6 +145,50 @@ def build_prompts_wikitext(tokenizer, n: int, seed: int, cache_dir: str,
 
 
 
+def build_prompts_wikitext_natural(tokenizer, n: int, seed: int, cache_dir: str,
+                                   prompt_tokens: int = 64, cont_tokens: int = 192) -> list[dict]:
+    """Texto REAL da wikitext: prompt = primeiros tokens, sequencia = os seguintes.
+
+    Nao ha geracao: a sequencia pontuada e o proprio texto do dataset. Serve a dois
+    fins que a geracao greedy nao atende:
+      * modelos BASE (sem SFT/RLHF) entram em laco com greedy (50-83% das sequencias),
+        o que destruiria a comparacao base x instruct;
+      * todos os modelos sao medidos exatamente nos MESMOS tokens, entao a diferenca de
+        kappa e de margens, nao de texto gerado.
+    A metrica continua sendo flip do top-1 sob teacher forcing contra a referencia.
+    """
+    from datasets import load_dataset
+
+    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="train",
+                      cache_dir=cache_dir)
+    rng = random.Random(seed)
+    need = prompt_tokens + cont_tokens
+    long_rows = [i for i in range(len(ds)) if len(ds[i]["text"]) > 4 * need]
+    out = []
+    for i in rng.sample(long_rows, min(4 * n, len(long_rows))):
+        ids = tokenizer(ds[i]["text"].strip(), add_special_tokens=False)["input_ids"]
+        if len(ids) < need:
+            continue
+        out.append({"prompt": tokenizer.decode(ids[:prompt_tokens]), "gold": "",
+                    "source": "wikitext_nat",
+                    "continuation": tokenizer.decode(ids[prompt_tokens:need])})
+        if len(out) >= n:
+            break
+    return out
+
+
+def natural_corpus(tokenizer, records: list[dict]) -> "GeneratedCorpus":
+    """GeneratedCorpus a partir de texto dado (campo `continuation`), sem gerar nada."""
+    prompt_ids, gen_ids, keep = [], [], []
+    for r in records:
+        p_ids = tokenizer(r["prompt"], add_special_tokens=True)["input_ids"]
+        g_ids = tokenizer(r["continuation"], add_special_tokens=False)["input_ids"]
+        if not g_ids:
+            continue
+        prompt_ids.append(p_ids); gen_ids.append(g_ids); keep.append(r)
+    return GeneratedCorpus(records=keep, prompt_ids=prompt_ids, gen_ids=gen_ids)
+
+
 def repetition_stats(gen_ids: list[list[int]], n: int = 4) -> dict:
     """Fracao de n-gramas repetidos por sequencia gerada.
 
