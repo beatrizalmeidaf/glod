@@ -523,13 +523,62 @@ def cmd_d2(args) -> None:
     (AN / "d2.json").write_text(json.dumps(out, indent=1))
 
 
+# ------------------------------------------------------------ prop (ablacao de limiar)
+def cmd_prop_thresh(args) -> None:
+    """Ablacao do limiar de 1 nat: E|dgap| e phi sao condicionados a g12 < h.
+
+    A previsao de 1a ordem usa E|dgap| medido nos tokens frageis (g12 < 1 nat por
+    padrao). Se a razao obs/previsto nao se mover ao variar h, o limiar e uma
+    conveniencia de estimacao e nao um parametro ajustado; e isso que se testa aqui.
+    """
+    law = json.loads((AN / "law.json").read_text())
+    hs_thresh = [0.5, 1.0, 2.0]
+    out = {}
+    for rs in refs():
+        if "__fp32" not in rs:
+            continue
+        ref = load(ROOT / rs / rs / "bf16.pt")
+        v = ref["topv"].double()
+        g12 = v[:, 0] - v[:, 1]
+        tie = g12 < 1e-6
+        hs = torch.tensor([0.02, 0.05, 0.1, 0.2])
+        dens = torch.stack([((g12 > 1e-6) & (g12 < h)).double().mean() / h for h in hs])
+        A = torch.stack([torch.ones_like(hs), hs], 1).double()
+        rho0 = float(torch.linalg.lstsq(A, dens[:, None]).solution[0])
+        rows = [p for p in law["rows"] if p["ref"] == rs and p["model"] == rs and p["family"] != "outro modelo"]
+        per_h = {}
+        for h in hs_thresh:
+            near = (~tie) & (g12 < h)
+            res = []
+            for p in sorted(rows, key=lambda r: r["kl"]):
+                f = ROOT / rs / rs / (p["config"].replace("/", "--") + ".pt")
+                if not f.exists():
+                    continue
+                c = load(f)
+                q = c["at_ref"].double()
+                dgap = (q[:, 0] - q[:, 1]) - g12
+                e_abs = dgap[near].abs().mean().item()
+                flip = (c["top1"] != ref["top1"])
+                pi_tie = flip[tie].double().mean().item() if tie.any() else 0.0
+                pred = tie.double().mean().item() * pi_tie + rho0 * e_abs / 2
+                res.append({"config": p["config"], "kl": p["kl"], "flip": p["flip"],
+                            "ratio": p["flip"] / pred if pred > 0 else float("nan"),
+                            "anisotropy_A": e_abs / math.sqrt(2 * p["kl"])})
+            per_h[str(h)] = {"phi": float(((g12 > 1e-6) & (g12 < h)).double().mean()), "configs": res}
+        out[rs] = {"rho0_cont": rho0, "by_threshold": per_h}
+        msg = "  ".join(f"h={h}: obs/pred {np.median([x['ratio'] for x in per_h[str(h)]['configs'] if x['kl'] < 0.25]):.3f}"
+                        for h in hs_thresh if per_h[str(h)]["configs"])
+        print(f"=== {rs}: {msg}")
+    (AN / "prop_threshold.json").write_text(json.dumps(out, indent=1))
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("cmd", choices=["law", "theory", "d3", "d4", "prop", "closedloop", "d2"])
+    p.add_argument("cmd", choices=["law", "theory", "d3", "d4", "prop", "prop-thresh", "closedloop", "d2"])
     args = p.parse_args(argv)
     torch.set_grad_enabled(False)
     {"law": cmd_law, "theory": cmd_theory, "d3": cmd_d3, "d4": cmd_d4, "prop": cmd_prop,
-     "closedloop": cmd_closedloop, "d2": cmd_d2}[args.cmd](args)
+     "prop-thresh": cmd_prop_thresh, "closedloop": cmd_closedloop, "d2": cmd_d2}[args.cmd](args)
     return 0
 
 
