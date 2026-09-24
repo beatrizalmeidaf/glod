@@ -32,6 +32,7 @@ STAGES: dict[str, str] = {
     "matched-kl": "ews.pipelines.tasks.matched_kl",
     "crack": "ews.pipelines.tasks.crack_gsm8k",
     "closedloop": "ews.pipelines.tasks.closedloop",
+    "compound": "ews.pipelines.tasks.compound",   # a lei de um passo compoe em geracao livre?
     # decodificacao especulativa (Secao 6)
     "spec-bench": "ews.pipelines.speculative.bench",
     "spec-law": "ews.pipelines.speculative.law",
