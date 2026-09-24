@@ -981,14 +981,14 @@
                 datasets.push({
                     label: 'Your Selected Measurement',
                     data: [{ x: selectedMeasurement.kl, y: selectedMeasurement.flip }],
-                    backgroundColor: '#ff5f56',
+                    backgroundColor: '#FFD700',
                     borderColor: '#fff',
                     borderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
                     order: 1
                 });
-                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: #ff5f56; border: 1px solid #fff;"></div> Selected</div>`;
+                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: #FFD700; border: 1px solid #fff;"></div> Selected</div>`;
             }
 
             datasets.unshift({
