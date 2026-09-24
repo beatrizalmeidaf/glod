@@ -166,7 +166,11 @@ def load_model(
         `LoadedModel` com o modelo em `eval()` e grad desabilitado.
     """
     torch_dtype = resolve_dtype(dtype)
-    torch_device = torch.device(device)
+    # device="auto": reparte o modelo entre as GPUs visiveis (accelerate). So para
+    # checkpoints que nao cabem numa placa (o ponto de escala em 70B); nos demais casos
+    # uma placa por modelo mantem a medicao de memoria atribuivel.
+    shard = str(device) == "auto"
+    torch_device = torch.device("cuda:0") if shard else torch.device(device)
     hf_token = token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
 
     LOGGER.info("Carregando [%s] %s em %s (%s)...", role, model_id, torch_device, torch_dtype)
@@ -184,8 +188,14 @@ def load_model(
         token=hf_token,
         low_cpu_mem_usage=True,
         revision=revision,
+        **({"device_map": "auto"} if shard else {}),
     )
-    model.to(torch_device)
+    if shard:
+        # com o modelo repartido, a entrada vai para a placa da primeira camada e o
+        # accelerate move os estados entre as placas
+        torch_device = next(model.parameters()).device
+    else:
+        model.to(torch_device)
     model.eval()
     model.requires_grad_(False)
 
