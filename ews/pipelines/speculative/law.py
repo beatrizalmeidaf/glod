@@ -95,8 +95,13 @@ def main(argv=None) -> int:
             name = f.stem[len("spec_"):]
             dm = name.split("_")[0] if "_" in name and name.startswith(("Qwen", "gemma", "OLMo", "Mistral", "Phi")) else rs
             cfg = name.split("_")[-1]
-            tf = ROOT / rs / dm / f"{'bf16' if cfg == 'raw' else cfg}.pt"
-            if not tf.exists():
+            # o draft nao comprimido foi gravado como raw.pt para drafts de outro modelo
+            # e como bf16.pt para o proprio alvo; aceitar os dois nomes
+            cands = ([ROOT / rs / dm / "raw.pt", ROOT / rs / dm / "bf16.pt"]
+                     if cfg == "raw" else [ROOT / rs / dm / f"{cfg}.pt"])
+            tf = next((c for c in cands if c.exists()), None)
+            if tf is None:
+                print(f"  (sem scoring TF para {rs} <- {name}: {[c.name for c in cands]})")
                 continue
             c = load(tf)
             agree = (c["top1"] == ref["top1"])[mask].tolist()
@@ -104,7 +109,9 @@ def main(argv=None) -> int:
             tv = c["tv"][mask].double().mean().item()
             flip = 1 - float(np.mean(agree))
             a_law = max(0.0, 1 - kap * math.sqrt(kl))
-            row = {"model": rs, "draft": name, "kl": kl, "tv": tv, "flip_tf": flip,
+            row = {"model": rs, "draft": name, "draft_model": dm,
+                   "cross_model": dm != rs, "draft_config": cfg,
+                   "kl": kl, "tv": tv, "flip_tf": flip,
                    "kappa_target": kap, "n_kappa": nk,
                    "meas_greedy_accept": j["greedy"]["accept_rate"],
                    "meas_greedy_tpr": j["greedy"]["tokens_per_round"],
