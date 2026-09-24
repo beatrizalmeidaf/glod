@@ -1,34 +1,40 @@
+# Python / Environments
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .env
 *.egg-info/
+.ruff_cache/
+.ipynb_checkpoints/
 
-# artefatos de experimento (versionar apenas o que virar figura do paper)
+# Data & Models
+data/
+*.pt
+*.safetensors
+
+# Logs & Execution Artifacts
+*.log
+var/
+
+# Results & Figures (Keep only .gitkeep)
 results/raw/*
 !results/raw/.gitkeep
 results/figures/*
 !results/figures/.gitkeep
-*.log
-*.pt
-*.safetensors
-.ipynb_checkpoints/
-data/
-
-TODO.md
-ews_ideia.md
-descobertas_historico.md
-# reestruturacao: artefatos de execucao e notas de ambiente
-var/
 results/figs/*
 !results/figs/.gitkeep
-FALTANTES.MD
-.ruff_cache
 figs_old/
+
+# Documentation & Presentations
 paper/
 docs/
 skills/
-
 Física da Compressão de LLMs.bak.pptx
 Física da Compressão de LLMs.pptx
+
+# Notes & TODOs
+TODO.md
+FALTANTES.MD
+ews_ideia.md
+descobertas_historico.md
