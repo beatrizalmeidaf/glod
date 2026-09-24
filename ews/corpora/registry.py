@@ -8,7 +8,9 @@ portanto trocar o id passado em `--corpus`, e nada mais.
   gsm8k     so GSM8K (raciocinio, geracao longa)
   mmlu_pt   so MMLU PT-BR (multipla escolha em portugues, CSV em data/)
   mmlu_en   so MMLU em ingles (cais/mmlu, split de teste)
-  wikitext  continuacao de texto livre (wikitext-2-raw-v1), sem gabarito
+  wikitext  continuacao de texto livre (wikitext-2-raw-v1), gerada pelo modelo
+  wikitext_nat  o texto REAL da wikitext como sequencia (sem geracao): unica opcao
+            valida para modelos base, que entram em laco com greedy
 
 `gold` fica vazio em wikitext: as metricas de tarefa (acuracia) nao se aplicam, mas
 todas as metricas por token (flips, KL, TV) se aplicam do mesmo jeito.
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 from ews.corpora.token_oracle import (
     build_prompts_gsm8k,
+    build_prompts_wikitext_natural,
     build_prompts_mmlu_en,
     build_prompts_mmlu_pt,
     build_prompts_wikitext,
@@ -29,6 +32,7 @@ CORPORA = {
     "mmlu_pt": ("mmlu_pt",),
     "mmlu_en": ("mmlu_en",),
     "wikitext": ("wikitext",),
+    "wikitext_nat": ("wikitext_nat",),   # texto real, sem geracao
 }
 
 
@@ -47,6 +51,8 @@ def build_records(corpus: str, tokenizer, n_prompts: int, seed: int, cache_dir: 
             out += build_prompts_mmlu_en(tokenizer, n_prompts, seed, cache_dir)
         elif part == "wikitext":
             out += build_prompts_wikitext(tokenizer, n_prompts, seed, cache_dir)
+        elif part == "wikitext_nat":
+            out += build_prompts_wikitext_natural(tokenizer, n_prompts, seed, cache_dir)
         else:                                     # pragma: no cover - registro errado
             raise AssertionError(part)
     return out
