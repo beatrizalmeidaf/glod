@@ -23,5 +23,12 @@ descobertas_historico.md
 var/
 results/figs/*
 !results/figs/.gitkeep
-
+FALTANTES.MD
 .ruff_cache
+figs_old/
+paper/
+docs/
+skills/
+
+Física da Compressão de LLMs.bak.pptx
+Física da Compressão de LLMs.pptx
