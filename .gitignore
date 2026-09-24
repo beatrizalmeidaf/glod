@@ -26,13 +26,10 @@ results/figs/*
 !results/figs/.gitkeep
 figs_old/
 
-# Documentation & Presentations
-paper/
+# Documentation
 docs/
 skills/
 web/
 
-Física da Compressão de LLMs.bak.pptx
-Física da Compressão de LLMs.pptx
 
 
