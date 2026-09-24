@@ -27,7 +27,7 @@ Hoje temos dezenas de técnicas para comprimir pesos de LLMs e acelerar a infer�
   <h3><strong>flips ≈ κ · √KL</strong></h3>
 </div>
 
-**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher, $\KL = \tfrac12\,\delta^\top F\,\delta + O(\|\delta\|^3)$), enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\KL}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
+**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher, $\mathrm{KL} = \tfrac12\,\delta^\top F\,\delta + O(\|\delta\|^3)$), enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\mathrm{KL}}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
 
 **O que é empírico** é que um **único** κ descreve arredondamento, poda, quantização de KV-cache, remoção de camadas e ruído isotrópico do mesmo modelo — o fator de proporcionalidade varia apenas 2,7% (CV mediano) entre famílias dentro de uma referência.
 
@@ -72,7 +72,7 @@ Duas grandezas distintas, que a versão anterior desta tabela confundia: o **exp
 
 *O R² conjunto é menor que o de qualquer referência isolada (todos ≥ 0.990) porque as referências diferem no intercepto. κ varia 1,6–2,6× entre corpora **dentro de um mesmo modelo**: reportar "o κ do modelo X" sem nomear a distribuição não significa nada.*
 
-### O Teto Intransponível
+### Teto Intransponível
 
 Testamos a resiliência da lei tentando forçar a rede a errar (Ataques Adversariais focados em maximizar flips, condicionados a um teto de KL). O resultado mostra que mesmo um atacante onipotente mal consegue arrancar 17% a mais de erros do que um compressor honesto simples, comprovando que a taxa de câmbio é, de fato, uma barreira geométrica fundamental.
 
@@ -98,25 +98,38 @@ Criamos duas ferramentas práticas para que a comunidade possa validar as previs
 ### 1. Simulador Web (Landing Page)
 Abra o [Simulador GLOD Web](https://beatrizalmeidaf.github.io/glod/index-pt.html) no seu navegador para acessar uma visualização gráfica interativa que compara técnicas tradicionais com o limite geométrico.
 
-### 2. Teste Teoria vs Prática via CLI
+### 2. Teste a lei contra as medições reais, sem GPU
+
+O arquivo [`data/measurements.csv`](data/measurements.csv) (39 KB) traz as **742 configurações
+medidas** do artigo — modelo, corpus, família, configuração, KL e flips. O script abaixo usa
+apenas a biblioteca padrão do Python e **não simula nada**: confronta a previsão com o que foi
+de fato observado.
+
 ```bash
-# Clone o repositório e teste a previsão para um dado orçamento KL
-$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10
+# previsto x medido, configuração por configuração, numa referência
+$ python3 scripts/test_formula.py --model gemma-3-4b-it --corpus gsm8k
 
-============================================================
-  GEOMETRIC LAW OF DAMAGE: FORMULA VS TRADICIONAL  
-============================================================
+kappa medido (Eq. 3, janela 0.001 < KL < 0.05) : 0.1299
+expoente ajustado em log-log                   : 0.5179  (R2 0.9960)
 
-[Previsão da Fórmula GLOD]
-flips = 0.35 * √0.1000
-Taxa de Flips Esperada  : 0.1107 (11.1%)
-
-[Resultados Empíricos Simulados dos Métodos Tradicionais]
-Método          | KL Medido  | Flips Empíricos | Erro vs Teoria 
-------------------------------------------------------------
-GPTQ (Quant)    | 0.0984     | 0.1082          | 0.0016         
-Wanda (Poda)    | 0.1011     | 0.1105          | 0.0009         
+config       familia              KL  flips medido   previsto     erro
+----------------------------------------------------------------------
+u8           rtn             0.00067       0.00361    0.00336   -6.8%
+kv4          kv              0.01043       0.01327    0.01327   +0.0%
+u5           rtn             0.01835       0.01740    0.01760   +1.1%
+mag20        magnitude       0.04413       0.02839    0.02729   -3.9%
+...
+erro absoluto mediano dentro da janela de kappa   : 1.1%
 ```
+
+```bash
+$ python3 scripts/test_formula.py --families   # a pergunta central, a KL casado
+$ python3 scripts/test_formula.py --list       # as 49 referências disponíveis
+$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # só a previsão
+```
+
+O modo `--families` reproduz a Tabela 5 do artigo a partir do CSV público sozinho, e
+[`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) trava essa concordância.
 
 ---
 
@@ -125,6 +138,8 @@ Wanda (Poda)    | 0.1011     | 0.1105          | 0.0009
 A tese completa, o histórico de resultados e as refutações estão detalhados em [docs/thesis_structure.md](docs/thesis_structure.md). O rigor dos testes matemáticos de idempotência das manipulações está em [DOC_TERMOS_E_TESTES.md](DOC_TERMOS_E_TESTES.md).
 
 ```text
+data/
+└── measurements.csv      # as 742 medições do artigo (KL, flips) — testáveis sem GPU
 ews/
 ├── paths.py              # caminhos e referências (variáveis de ambiente)
 ├── cli.py                # `ews <estágio>` — dispatcher central
