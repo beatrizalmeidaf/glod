@@ -125,9 +125,21 @@ def fig2() -> None:
     dm = json.loads((AN / "domain.json").read_text())
     fig, ax = plt.subplots(figsize=(4.0, 3.4))
     
-    xs = [r["p_gap_lt1"] for r in sl if shown(r["ref"])]
-    ys = [r["kappa"] for r in sl if shown(r["ref"])]
-    ax.scatter(xs, ys, s=16, color="#1f77b4", label=f"modelos densos (n={len(xs)})")
+    pts = [r for r in sl if shown(r["ref"])]
+    xs = [r["p_gap_lt1"] for r in pts]
+    ys = [r["kappa"] for r in pts]
+    # com mais de um corpus na figura, a cor diz qual e: o ponto da afirmacao e que
+    # corpora diferentes caem na MESMA reta, entao eles precisam ser distinguiveis
+    groups: dict[str, list] = {}
+    for r in pts:
+        groups.setdefault(corpus_of(r["ref"]), []).append(r)
+    if len(groups) == 1:
+        ax.scatter(xs, ys, s=16, color="#1f77b4", label=f"modelos densos (n={len(xs)})")
+    else:
+        cols = {"mix": "#1f77b4", "gsm8k": "#ff7f0e", "mmlu_en": "#9467bd", "wikitext": "#17becf"}
+        for c, g in sorted(groups.items()):
+            ax.scatter([r["p_gap_lt1"] for r in g], [r["kappa"] for r in g], s=18,
+                       color=cols.get(c, "#333333"), label=f"corpus {c} (n={len(g)})")
     
     c = np.polyfit(xs, ys, 1)
     xx = np.linspace(min(xs) * 0.9, max(xs) * 1.05, 20)
