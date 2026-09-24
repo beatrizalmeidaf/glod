@@ -6,7 +6,6 @@ Projeto focado em otimizar e simular a inferência de Large Language Models (LLM
 
 ## 1. Conceitos Fundamentais 
 
-Aqui estão os conceitos centrais que dão vida ao código (encontrados na pasta `ews/core/`):
 
 ### A. Quantização (`quantize.py`)
 **O que é:** Quantizar significa reduzir a precisão dos "pesos" matemáticos do LLM. O modelo normal usa números de 16-bits (bfloat16). O simulador consegue reduzi-los para 8-bits, 4-bits ou até 2-bits.
