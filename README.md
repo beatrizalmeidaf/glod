@@ -21,45 +21,56 @@ Hoje temos dezenas de técnicas para comprimir pesos de LLMs e acelerar a infer�
 
 **GLOD responde a essa pergunta matematicamente.** Foi medido exaustivamente o efeito de 10+ compressores através de múltiplos modelos (de 1B até 72B parâmetros) e múltiplos domínios. A descoberta central é que:
 
-> Para uma dada referência e distribuição, **qualquer perturbação estática de pesos** converte divergência KL em mudanças de decisão (flips) a uma taxa única e previsível fixada apenas pela **geometria do modelo**.
+> Para uma dada referência (par modelo + distribuição de avaliação), perturbações estáticas de pesos mecanicamente distintas convertem divergência KL em mudanças de decisão (*flips*) **a uma taxa que difere entre si em no máximo 5%**, fixada pela **geometria das margens do modelo**.
 
-A equação fundamental que rege todo compressor estático:
 <div align="center">
   <h3><strong>flips ≈ κ · √KL</strong></h3>
 </div>
 
-- **Não importa o algoritmo:** Condicionado ao KL, um compressor AWQ de 4 bits e uma Poda Wanda com a mesma divergência KL causam exatamente o mesmo número de *flips*.
+**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher, $\KL = \tfrac12\,\delta^\top F\,\delta + O(\|\delta\|^3)$), enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\KL}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
 
-### Aderência Universal (Compressores Tradicionais vs GLOD)
+**O que é empírico** é que um **único** κ descreve arredondamento, poda, quantização de KV-cache, remoção de camadas e ruído isotrópico do mesmo modelo — o fator de proporcionalidade varia apenas 2,7% (CV mediano) entre famílias dentro de uma referência.
 
-Não importa se você usa Poda, Quantização AWQ ou Arredondamento (RTN). Todos convergem estruturalmente para o limite geométrico previsto pela nossa fórmula com margem de erro na casa dos décimos de ponto percentual.
+- **O algoritmo importa pouco, mas não é irrelevante:** condicionado ao KL, AWQ de 4 bits e poda Wanda ficam a menos de 1,2% um do outro em *flips*. O desvio máximo entre todas as nove famílias testadas é de 5%, e quatro delas têm desvio estatisticamente detectável.
 
-| Compressor | Família | Desvio Empírico vs Teoria | Erro Padrão (SE) |
-|:---|:---|:---:|:---:|
-| 🏆 **GPTQ** | Quantização | **-0.14 pp** | ± 0.17 pp |
-| 🥈 **AWQ** | Quantização | **-0.14 pp** | ± 0.19 pp |
-| 🥉 **RTN** | Arredondamento | **+0.36 pp** | ± 0.09 pp |
-| **Wanda** | Poda | **+0.37 pp** | ± 0.33 pp |
-| **SparseGPT** | Poda | **+1.18 pp** | ± 0.32 pp |
+### Quanto a família do método ainda importa, a KL casado
 
-*(pp = percentage points de diferença de flips. A fórmula GLOD serve perfeitamente como Ground Truth para todas as técnicas).*
+Para cada referência ajustamos a lei de potência da própria referência e medimos o quanto cada família se desvia dela. O desvio é **multiplicativo sobre a taxa de flips**; os intervalos são agrupados por referência (a unidade independente), sobre as 742 configurações.
+
+| Compressor | Família | Flips vs. a lei da referência | IC 95% | refs |
+|:---|:---|:---:|:---:|:---:|
+| **Remoção de camadas** | Estrutural | **0.950** ▼ | [0.927, 0.973] | 14 |
+| **KV-cache (quant.)** | Cache | **0.987** ▼ | [0.979, 0.995] | 46 |
+| Magnitude | Poda | 0.990 | [0.976, 1.004] | 46 |
+| Ruído gaussiano | Controle | 0.994 | [0.985, 1.003] | 47 |
+| **GPTQ** | Quantização | 0.997 | [0.988, 1.005] | 47 |
+| **AWQ** | Quantização | 0.997 | [0.988, 1.006] | 47 |
+| **RTN** | Arredondamento | **1.009** ▲ | [1.004, 1.013] | 47 |
+| Wanda | Poda | 1.009 | [0.993, 1.024] | 46 |
+| **SparseGPT** | Poda | **1.028** ▲ | [1.012, 1.043] | 45 |
+
+*Fungibilidade estrita é falsa: quatro das nove famílias têm intervalo excluindo 1, e a ordem é interpretável — remover camadas inteiras produz 5,0% **menos** flips por unidade de divergência, poda calibrada 2,8% **mais**. O enunciado correto é fungibilidade a menos de 5%, não igualdade.*
 
 <div align="center">
   <img src="results/graficos/methods_chart.png" alt="Comparação de Métodos vs Teoria" width="700"/>
 </div>
 
-- **Teto da Perturbação Estática:** Comprovou-se via ataques adversariais que otimizadores focados em maximizar dano atingem no máximo ~1.17× essa taxa. O limite é inquebrável por compressão estática.
+- **Teto da Perturbação Estática:** um otimizador com acesso total ao gradiente e orçamento de KL fixo atinge no máximo **1.17×** a taxa de um compressor padrão (e **nada** em dois dos quatro corpora), enquanto o objetivo inverso corta a taxa pela metade. A assimetria — fácil perder dano decisório a divergência fixa, difícil ganhá-lo — é o resultado robusto. Apresentamos os tetos como estimativas de primeira ordem sob as hipóteses declaradas, não como limites provados.
 - **O Futuro:** Como compressores estáticos usam apenas ~17% do orçamento informacional do oráculo perfeito, GLOD demonstra que a otimização de próxima geração exigirá **compressores argmax-aware** (alocação de bits per-token).
 
-### Validação Empírica (Domínios & R²)
+### Validação Empírica por Domínio
 
-| Corpus | Escopo | Inclinação Conjunta (κ) | Previsibilidade (R²) |
-|:---|:---|:---:|:---:|
-| **GSM8K** | Respostas lógicas exatas | **0.189** | 0.956 |
-| **MMLU_EN** | Conhecimento geral (Múltipla Escolha) | **0.481** | 0.940 |
-| **Wikitext** | Geração de texto livre | **0.465** | 0.934 |
+Duas grandezas distintas, que a versão anterior desta tabela confundia: o **expoente** (a inclinação em log-log, que a teoria prevê ser ≈ ½) e **κ** (a taxa de câmbio, que depende do par modelo+corpus).
 
-*Condicionado ao KL, o número de erros (flips) depende estritamente do dataset e do quão "gordas" são as margens do modelo.*
+| Corpus | Escopo | Expoente conjunto | R² conjunto | κ (faixa entre modelos) |
+|:---|:---|:---:|:---:|:---:|
+| **GSM8K** | Respostas lógicas exatas | 0.513 | 0.954 | 0.13 – 0.24 |
+| **Mix (GSM8K+MMLU-PT)** | Misto | 0.512 | 0.960 | 0.19 – 0.35 |
+| **MMLU-en** | Conhecimento geral | 0.483 | 0.937 | 0.21 – 0.45 |
+| **WikiText** | Geração de texto livre | 0.462 | 0.931 | 0.27 – 0.56 |
+| **WikiText (natural)** | Texto real, sem geração | 0.468 | 0.978 | 0.39 – 0.56 |
+
+*O R² conjunto é menor que o de qualquer referência isolada (todos ≥ 0.990) porque as referências diferem no intercepto. κ varia 1,6–2,6× entre corpora **dentro de um mesmo modelo**: reportar "o κ do modelo X" sem nomear a distribuição não significa nada.*
 
 ### O Teto Intransponível
 
@@ -76,7 +87,7 @@ Testamos a resiliência da lei tentando forçar a rede a errar (Ataques Adversar
 | 72B+ | 10+ | 5.7x | 0.99 |
 | :---: | :---: | :---: | :---: |
 | **Model Scale** | **Compressors Tested** | **Oracle Gap** | **R² Accuracy** |
-| Validade confirmada no Qwen2.5-72B | Quantização, Poda e Ataques | Distância para otimização ideal | Previsão de flips via Geometria |
+| Validade confirmada no Qwen2.5-72B | Quantização, Poda e Ataques | Compressores usam 17% do orçamento do oráculo | R² por referência (o conjunto é 0.93–0.98) |
 
 ---
 
@@ -93,7 +104,7 @@ Abra o [Simulador GLOD Web](https://beatrizalmeidaf.github.io/glod/index-pt.html
 $ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10
 
 ============================================================
-  ELASTIC WEIGHT STREAMING: FÓRMULA VS TRADICIONAL  
+  GEOMETRIC LAW OF DAMAGE: FORMULA VS TRADICIONAL  
 ============================================================
 
 [Previsão da Fórmula GLOD]
