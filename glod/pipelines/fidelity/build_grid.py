@@ -218,7 +218,7 @@ def main(argv=None) -> int:
     p.add_argument("--calib-n", type=int, default=128)
     p.add_argument("--calib-len", type=int, default=512)
     p.add_argument("--calib-batch", type=int, default=8)
-    p.add_argument("--calib-source", choices=["wikitext", "c4"], default="wikitext",
+    p.add_argument("--calib-source", choices=["wikitext", "c4", "code"], default="wikitext",
                    help="texto de calibracao do GPTQ/AWQ/SparseGPT/Wanda; c4 grava em OUT/calib_c4/<ref>")
     p.add_argument("--out-subdir", default=None,
                    help="grava em OUT/<subdir>/<ref> (fora do alcance das analises), ex.: extreme")
