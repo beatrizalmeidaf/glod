@@ -27,7 +27,12 @@ STAGES: dict[str, str] = {
     "margin-shape": "glod.pipelines.fidelity.margin_shape",
     "delta-g": "glod.pipelines.fidelity.delta_g",
     "tv-mechanism": "glod.pipelines.fidelity.tv_mechanism",
+    "tv-theory": "glod.pipelines.fidelity.tv_theory",
+    "tv-exact": "glod.pipelines.fidelity.tv_exact",
     "calib-control": "glod.pipelines.fidelity.calib_control",
+    "divergences": "glod.pipelines.fidelity.divergences",
+    "holdout": "glod.pipelines.fidelity.holdout",
+    "holdout-mech": "glod.pipelines.fidelity.holdout_mech",
     "extreme": "glod.pipelines.fidelity.extreme",
     "fungibility": "glod.pipelines.fidelity.fungibility",
     "kl-greedy": "glod.pipelines.fidelity.kl_greedy",
@@ -44,6 +49,8 @@ STAGES: dict[str, str] = {
     "closedloop": "glod.pipelines.tasks.closedloop",
     "compound": "glod.pipelines.tasks.compound",   # a lei de um passo compoe em geracao livre?
     # decodificacao especulativa (Secao 6)
+    "amq": "glod.pipelines.compress.amq",           # quantizacao ciente do arg-max
+    "amq-eval": "glod.pipelines.compress.amq_eval",
     "spec-bench": "glod.pipelines.speculative.bench",
     "spec-law": "glod.pipelines.speculative.law",
     # adaptatividade por token (Secao 7)
@@ -52,6 +59,7 @@ STAGES: dict[str, str] = {
     "adaptive-closedloop": "glod.pipelines.adaptive.closedloop",
     "adaptive-report": "glod.pipelines.adaptive.report",
     # saidas
+    "report": "glod.pipelines.report.glod_report",   # relatorio de fidelidade para usuarios
     "figures": "glod.pipelines.report.figures",
     "html-report": "glod.pipelines.report.html_report",
     # Fase 1 (elastic depth, descartada; mantida para reproduzir o historico)
