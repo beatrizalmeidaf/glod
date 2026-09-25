@@ -12,14 +12,14 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ews.core.cost_model import (
+from glod.core.cost_model import (
     dprime_from_auroc,
     gate_cost,
     promote_rate_at_divergence,
     required_auroc,
     speculative_cost,
 )
-from ews.corpora.token_oracle import (
+from glod.corpora.token_oracle import (
     auroc,
     cost_at_divergence,
     gate_curve,

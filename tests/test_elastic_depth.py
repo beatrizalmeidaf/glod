@@ -6,8 +6,8 @@ Roda em CPU, em segundos, sem precisar do checkpoint gated do Gemma:
 import sys, os, torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from transformers import Gemma3TextConfig, Gemma3ForCausalLM
-from ews.core.elastic_depth import make_elastic_depth, uniform_skip_schedule, SkippableDecoderLayer
-from ews.core.model_loader import resolve_decoder
+from glod.core.elastic_depth import make_elastic_depth, uniform_skip_schedule, SkippableDecoderLayer
+from glod.core.model_loader import resolve_decoder
 
 torch.manual_seed(0)
 cfg = Gemma3TextConfig(vocab_size=512, hidden_size=64, intermediate_size=128,

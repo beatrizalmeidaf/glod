@@ -10,8 +10,8 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from transformers import Qwen3Config, Qwen3ForCausalLM
 
-from ews.core import compressors as C
-from ews.core.model_loader import resolve_decoder
+from glod.core import compressors as C
+from glod.core.model_loader import resolve_decoder
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 torch.manual_seed(0)

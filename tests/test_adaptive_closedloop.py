@@ -1,4 +1,4 @@
-"""Sanidade da troca de precisao por token com KV misto (ews_adaptive_closedloop).
+"""Sanidade da troca de precisao por token com KV misto (`glod adaptive-closedloop`).
 
 Com promocao sempre ligada e alta = bf16, a geracao deve ser identica ao greedy do bf16
 puro; com promocao desligada, identica ao greedy da base. Qualquer erro no alinhamento
@@ -12,12 +12,12 @@ import sys
 import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from ews.core import compressors as C
-from ews.core.closed_loop import cascade_generate
-from ews.core.model_loader import load_model
-from ews.corpora.token_oracle import _chat, _eos_ids
-from ews.pipelines.adaptive.closedloop import generate_policy
-from ews.paths import CACHE_DIR
+from glod.core import compressors as C
+from glod.core.closed_loop import cascade_generate
+from glod.core.model_loader import load_model
+from glod.corpora.token_oracle import _chat, _eos_ids
+from glod.pipelines.adaptive.closedloop import generate_policy
+from glod.paths import CACHE_DIR
 
 dev = os.environ.get("DEV", "cuda:0")
 torch.cuda.set_device(torch.device(dev))

@@ -16,12 +16,12 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ews.paths import CACHE_DIR
+from glod.paths import CACHE_DIR
 
 from transformers import AutoTokenizer, Gemma3ForCausalLM, Gemma3TextConfig
 
-from ews.core.model_loader import LoadedModel
-from ews.corpora.token_oracle import (
+from glod.core.model_loader import LoadedModel
+from glod.corpora.token_oracle import (
     auroc,
     burstiness,
     burstiness_null,
@@ -221,7 +221,7 @@ check(abs(auroc(xt, yt) - brute_t) < 1e-9, "AUROC com empates == forca bruta",
 
 # ------------------------------------------------ granularidade e gates
 print("\n=== chunk_oracle_cost ===")
-from ews.corpora.token_oracle import chunk_oracle_cost, cost_at_divergence, gate_curve
+from glod.corpora.token_oracle import chunk_oracle_cost, cost_at_divergence, gate_curve
 
 # 1 config barata (custo 1), referencia 10; seq0 = [ok ok ok falha], seq1 = [ok ok]
 ag = torch.tensor([[1, 1, 1, 0, 1, 1]], dtype=torch.bool)

@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from transformers import Gemma3ForCausalLM, Gemma3TextConfig
 
-from ews.core.model_loader import resolve_decoder
-from ews.core.quantize import (
+from glod.core.model_loader import resolve_decoder
+from glod.core.quantize import (
     QuantizationSimulator,
     effective_bits,
     quantize_dequantize,
@@ -190,7 +190,7 @@ check(sim.delta_bytes(2, range(6)) > sim.delta_bytes(4, range(6)),
 
 # ------------------------------------------------ composicao com layer skip
 print("\n=== quantizacao + elastic depth juntos ===")
-from ews.core.elastic_depth import make_elastic_depth
+from glod.core.elastic_depth import make_elastic_depth
 
 ctrl = make_elastic_depth(model)
 sim2 = QuantizationSimulator(resolve_decoder(model), group_size=32)

@@ -16,12 +16,12 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ews.paths import CACHE_DIR
+from glod.paths import CACHE_DIR
 
 from transformers import Gemma3ForCausalLM, Gemma3TextConfig
 
-from ews.core.model_loader import LoadedModel
-from ews.core.scoring import (
+from glod.core.model_loader import LoadedModel
+from glod.core.scoring import (
     _left_pad_batch,
     gold_nll,
     predictions_and_correctness,

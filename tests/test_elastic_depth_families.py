@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from transformers import (MistralConfig, MistralForCausalLM, Olmo2Config, Olmo2ForCausalLM,
                           Phi3Config, Phi3ForCausalLM, Qwen3Config, Qwen3ForCausalLM)
 
-from ews.core.elastic_depth import make_elastic_depth
-from ews.core.model_loader import resolve_decoder
+from glod.core.elastic_depth import make_elastic_depth
+from glod.core.model_loader import resolve_decoder
 
 common = dict(vocab_size=256, hidden_size=64, intermediate_size=128, num_hidden_layers=6,
               num_attention_heads=4, num_key_value_heads=2, max_position_embeddings=64)

@@ -18,13 +18,13 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ews.paths import CACHE_DIR
+from glod.paths import CACHE_DIR
 
 from transformers import AutoTokenizer, Gemma3ForCausalLM, Gemma3TextConfig
 
-from ews.core.closed_loop import cascade_generate
-from ews.core.model_loader import LoadedModel
-from ews.corpora.token_oracle import GeneratedCorpus, _eos_ids, generate_greedy, score_tokens
+from glod.core.closed_loop import cascade_generate
+from glod.core.model_loader import LoadedModel
+from glod.corpora.token_oracle import GeneratedCorpus, _eos_ids, generate_greedy, score_tokens
 
 FAILURES: list[str] = []
 
