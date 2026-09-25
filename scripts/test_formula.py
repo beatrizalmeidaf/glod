@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """GLOD: testar a lei flips = kappa*sqrt(KL) contra as medicoes reais do paper.
 
-Nao ha nada simulado aqui. O script le `data/measurements.csv`, que traz as 742
+Nao ha nada simulado aqui. O script le `data/measurements.csv`, que traz as 802
 configuracoes medidas (modelo, corpus, familia, configuracao, KL, flips) usadas no
 artigo, e confronta a previsao com o que foi de fato observado. Nao precisa de GPU.
 
@@ -27,7 +27,7 @@ from collections import defaultdict
 from pathlib import Path
 
 CSV = Path(__file__).resolve().parent.parent / "data" / "measurements.csv"
-# janela em que kappa e definido no artigo (Eq. 3): o regime de compressao implantada
+# janela em que kappa e definido no artigo (Eq. 4): o regime de compressao implantada
 KAPPA_LO, KAPPA_HI = 1e-3, 0.05
 RULE = "=" * 72
 
@@ -82,7 +82,7 @@ def cmd_reference(rows, model: str, corpus: str) -> int:
     kappa = kappa_of(sel)
     slope, r2 = fit_loglog(sel)
     print(f"\n{RULE}\n  GLOD | {model} | corpus {corpus}\n{RULE}")
-    print(f"\nkappa medido (Eq. 3, janela {KAPPA_LO:g} < KL < {KAPPA_HI:g}) : {kappa:.4f}")
+    print(f"\nkappa medido (Eq. 4, janela {KAPPA_LO:g} < KL < {KAPPA_HI:g}) : {kappa:.4f}")
     print(f"expoente ajustado em log-log                        : {slope:.4f}  (R2 {r2:.4f})")
     print("\nA previsao abaixo usa APENAS kappa e o KL medido de cada configuracao.")
     print("A coluna 'erro' e (previsto - medido) / medido.\n")
