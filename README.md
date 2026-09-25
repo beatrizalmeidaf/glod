@@ -13,7 +13,7 @@ While the paper describes the theoretical discovery, the **GLOD** package provid
 [![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![build](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![paper](https://img.shields.io/badge/arxiv-Paper-red.svg)]()
-[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://beatrizalmeidaf.github.io/glod/index-en.html)
+[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/gh-pages)
 
 </div>
 
@@ -21,54 +21,63 @@ While the paper describes the theoretical discovery, the **GLOD** package provid
 
 ## What is the Geometric Law of Damage?
 
-Today we have dozens of techniques to compress LLM weights and accelerate inference (Pruning, Quantization, Layer Skipping, etc). When we choose one of these methods, the big question is: **do they cause different types of "damage" to the model's reasoning, or do they merely differ in the amount of damage?**
+Today we have dozens of techniques to compress LLM weights and accelerate inference (pruning, quantization, layer skipping, etc.). When we choose one of these methods, the big question is: **do they cause different types of "damage" to the model's decisions, or do they merely differ in the amount of damage?**
 
-**GLOD answers this question mathematically.** We exhaustively measured the effect of 10+ compressors across **19 models** from six families (Gemma-3, Qwen3/2.5, Mistral, Phi, OLMo-2, and Llama-3), ranging from 1B to 72B parameters, on five corpora — **802 configurations** in total. The central discovery is that:
+We measured the effect of 10+ compressors across **19 models** from six families (Gemma-3, Qwen3/2.5, Mistral, Phi, OLMo-2 and Llama-3), from 1B to 72B parameters, on five corpora — **802 configurations** in total — under teacher forcing, counting how often the compressed model's arg-max token differs from the dense model's (the *flip rate*). The central findings:
 
-> For a given reference (model + evaluation distribution pair), **Total Variation (TV)** — a first-order divergence — tracks the decision flip rate nearly one-for-one (**flips ≈ TV**) with no free constant. Meanwhile, KL Divergence works only because it approximates TV via the **model's margin geometry**.
+> **Total Variation (TV)** — a first-order divergence — tracks the flip rate at a ratio near one (median 1.05; model-level mean 1.075, 95% CI [1.04, 1.11]) with **no fitted constant**. KL tracks flips too, but only through an conversion factor κ = flips/√KL that varies 4.3× across models and corpora.
 
 <div align="center">
-  <h3><strong>flips ≈ TV ≈ κ · √KL</strong></h3>
+  <h3><strong>flips ≈ TV,&nbsp;&nbsp;&nbsp; flips ≈ κ · √KL</strong></h3>
+  <img src="results/graficos/tv_chart.png" alt="Flips against total variation, and kappa against the Jensen factor" width="820"/>
 </div>
 
-**Why KL needs a coefficient.** The square root form is not an empirical finding: divergence is **second** order in the weight perturbation (Taylor expansion with the Fisher Information metric):
+**Why KL needs a coefficient.** The square-root form is not an empirical finding: divergence is **second** order in the perturbation (for weights, the Fisher form below), while the decision margin moves at **first** order, so flips grow as √KL.
 
 $$ \mathrm{KL} = \frac{1}{2} \delta^\top F \delta + O(\lVert\delta\rVert^3) $$
 
-while the decision margin displacement is **first** order. The proportionality with $\sqrt{\mathrm{KL}}$ follows directly. We verified that the quadratic regime holds up to ~11% deviation within the window where κ is defined, breaking down above ~2 nats.
+**Why κ varies (the Jensen factor).** κ decomposes exactly as κ = (flips/TV) · c · J, where J = E[√KL_t] / √E[KL_t]. Because KL is averaged over tokens *before* the square root, κ is small when the divergence is concentrated on a few tokens (GSM8K, where most tokens are near-certain; J ≈ 0.38) and larger when it is spread out (natural text; J ≈ 0.75). J carries **70%** of the variance of log κ across references; TV is first order at every token and has no such factor. A first-order model that uses only the dense model, flips/TV = √2·ρ(0)/E[h(p)] with h(p) = Σᵢ pᵢ√(1 − 2pᵢ + Σⱼpⱼ²) (isotropic logit displacement), predicts the per-reference ratio with a mean error of 10% and orders the references as measured (`python -m glod tv-theory`). As temperature goes to zero, flips/TV tends to exactly one, and its median stays between 1.01 and 1.11 for temperatures 0.25–2. The split is by order, not by statistic: Hellinger distance, also first order at every token, is nearly as stable across references (per-reference spread 1.54× vs 1.33× for TV), while √JS and √KL, both second order before the root, spread 3.6× and 4.0×.
 
-**What is empirical** is that a **single** κ describes rounding, pruning, KV-cache quantization, layer removal, and isotropic noise on the same model — the proportionality factor varies by only 2.7% (median CV) across families within a reference.
+**Where it holds.** The quadratic approximation is within 11% where κ is measured (KL < 0.05). Flips/√KL is flat up to ~0.25 nats, rises above it, and breaks at 2-bit weights, where KL reaches 8–18 nats and nearly every decision flips; flips/TV stays within about 25% of its window value throughout.
 
-- **The algorithm matters little, but it is not irrelevant:** conditional on KL, 4-bit AWQ and Wanda pruning are within 1.2% of each other in *flips*. The maximum deviation among all nine tested families is 5%, and four of them have a statistically detectable deviation.
+**Out of sample (pre-registered).** Five predictions were registered before generating a held-out code corpus (MBPP) for 3 models, then extended unchanged to 5 more before their completions existed. In all 8 models the exponent (0.48–0.57) and the near-unit flips/TV ratio (0.98–1.05) held. κ predicted from the Jensen factor overestimated κ in every model (by 5–25%; within the 15% tolerance in 3 of 8), and per-family deviations were about three times larger than in sample (median 7.5% vs 2.4%) — but the failure is KL's: measured against TV, the same deviations are 2.7% (vs 7.5% against √KL). 50% sparsity spreads its divergence 1.3–1.5× more evenly across code tokens (the Jensen factor J) at an unchanged flips/TV, so KL understates its flips; recalibrating on Python code lowers KL by 28% but leaves the deviations (7.7% → 7.3%). Across domains, families are interchangeable in TV, not in KL (`python -m glod holdout-mech`). Predictions: [`results/holdout_predictions.json`](results/holdout_predictions.json), [`results/holdout_predictions_ext.json`](results/holdout_predictions_ext.json).
+
+<div align="center">
+  <img src="results/graficos/regime_chart.png" alt="Where the square-root relation bends and breaks" width="700"/>
+</div>
 
 ### How much the method family still matters, at matched KL
 
-For each reference, we fit the reference's own power law and measure how much each family deviates from it. The deviation is **multiplicative over the flip rate**; intervals are clustered by reference (the independent unit), over all 802 configurations.
+For each reference, we fit the reference's own power law **without** the family being measured and report how far that family's flip rate sits from it (multiplicative; intervals clustered by model; 802 configurations). The last column restricts the comparison to the KL window where all families coexist.
 
-| Compressor | Family | Flips vs. reference law | 95% CI | refs |
+| Compressor | Family | Flips vs. curve (held out) | 95% CI | Common KL window |
 |:---|:---|:---:|:---:|:---:|
-| **Layer Removal** | Structural | **0.950** ▼ | [0.927, 0.973] | 14 |
-| **KV-cache (quant.)** | Cache | **0.989** ▼ | [0.982, 0.997] | 51 |
-| Gaussian Noise | Control | 0.993 | [0.985, 1.001] | 52 |
-| Magnitude | Pruning | 0.995 | [0.982, 1.009] | 51 |
-| **GPTQ** | Quantization | 0.996 | [0.988, 1.003] | 52 |
-| **AWQ** | Quantization | 0.997 | [0.989, 1.005] | 52 |
-| Wanda | Pruning | 1.005 | [0.991, 1.020] | 51 |
-| **RTN** | Rounding | **1.008** ▲ | [1.004, 1.012] | 52 |
-| **SparseGPT** | Pruning | **1.023** ▲ | [1.009, 1.038] | 50 |
+| **Layer removal** | Structural | **0.945** ▼ | [0.920, 0.970] | 0.936 |
+| KV-cache (quant.) | Cache | 0.986 | [0.974, 0.997] | 0.984 |
+| Magnitude | Pruning | 0.990 | [0.955, 1.026] | 0.989 |
+| Gaussian noise | Control | 0.995 | [0.980, 1.011] | 0.997 |
+| GPTQ | Quantization | 0.996 | [0.988, 1.005] | 1.004 |
+| AWQ | Quantization | 1.003 | [0.991, 1.016] | 1.006 |
+| Wanda | Pruning | 1.007 | [0.970, 1.044] | 0.986 |
+| RTN | Rounding | 1.022 | [1.005, 1.039] | 1.014 |
+| SparseGPT | Pruning | 1.024 | [1.001, 1.048] | 1.009 |
 
-*In the common KL window where all families coexist ($0.03 \leq \KL \leq 0.20$), eight of the nine methods have a maximum deviation of just 1.6%. After Holm correction, only Layer Removal significantly alters the geometry (5.5% fewer flips). Strict fungibility holds closely in the common regime.*
+*All families stay within 5.5% of the curve; in the common window ($0.03 \leq \mathrm{KL} \leq 0.20$) eight of the nine stay within 1.6%. After a Holm correction only layer removal deviates significantly. Recalibrating GPTQ/AWQ/SparseGPT/Wanda on C4 instead of WikiText-2 moves them along the curve, not off it. Closeness to the curve says how many decisions change, not how good a compressor is.*
 
 <div align="center">
-  <img src="results/graficos/methods_chart.png" alt="Methods Comparison vs Theory" width="700"/>
+  <img src="results/graficos/methods_chart.png" alt="Deviation of each family from the reference curve" width="700"/>
 </div>
 
-- **The Static Perturbation Ceiling:** an optimizer with full gradient access and a fixed KL budget achieves at most **1.17×** the rate of a standard compressor (and **nothing** on two of the four corpora), while the inverse objective cuts the rate in half. The asymmetry — easy to lose decision damage at fixed divergence, hard to gain it — is the robust result. We present the ceilings as first-order estimates under the stated assumptions, not as proven bounds.
-- **The Future:** Because static compressors use only ~17% of the perfect oracle's informational budget, GLOD demonstrates that next-generation optimization will require **argmax-aware compressors** (per-token bit allocation).
+- **Standard compressors look like generic perturbations:** they align with the flip directions no better than isotropic Gaussian noise of the same Fisher norm.
+- **Optimized perturbations:** a gradient search at a fixed KL budget raised flips by 13–17% on two corpora and not detectably on two others — a lower bound on the worst case, not a ceiling — while the opposite objective **halved** them on every corpus. To first order, standard compressors produce 17.4% of the flip rate of a token-by-token oracle; a fixed perturbation can at most double that, and the rest requires choosing token by token where the divergence goes. The practical room is in the other direction: **arg-max-aware compressors** that keep their error out of the flip directions could change half as many decisions at the same divergence (per-token precision allocation, which we also tested, does *not* pay off in free-running generation).
+
+<div align="center">
+  <img src="results/graficos/attacks_chart.png" alt="Optimized perturbations vs standard compressors" width="700"/>
+</div>
 
 ### Empirical Validation by Domain
 
-Two distinct quantities, which earlier versions of this table conflated: the **exponent** (the slope in log-log, which theory predicts to be ≈ ½) and **κ** (the exchange rate, which depends on the model+corpus pair).
+Two distinct quantities: the **exponent** (the slope in log-log, which theory predicts to be ≈ ½) and **κ** (the conversion factor, which depends on the model+corpus pair).
 
 | Corpus | Scope | Pooled Exponent | Pooled R² | κ (range across models) |
 |:---|:---|:---:|:---:|:---:|
@@ -78,44 +87,47 @@ Two distinct quantities, which earlier versions of this table conflated: the **e
 | **WikiText** | Free text generation | 0.464 | 0.937 | 0.27 – 0.56 |
 | **WikiText (natural)** | Real text, no generation | 0.471 | 0.980 | 0.39 – 0.56 |
 
-*The pooled R² is lower than that of any isolated reference (all ≥ 0.990) because the references differ in intercept. κ varies 1.6–2.6× between corpora **within the same model**: reporting "the κ of model X" without naming the distribution means nothing.*
-
-**Why does κ vary? (The Jensen Factor):** The paper shows that 70% of this variance across corpora is caused by the **Jensen inequality**. Because KL divergence averages the per-token divergence *before* the square root is applied, it structurally penalizes high-entropy distributions (like MMLU or natural text) compared to low-entropy ones (like GSM8K). Total Variation (TV) is first-order at every token and avoids this Jensen flattening entirely.
+*The pooled R² is lower than that of any isolated reference (all ≥ 0.990) because the references differ in intercept; per-reference exponents range 0.46–0.58. κ varies 1.6–2.6× between corpora **within the same model**: reporting "the κ of model X" without naming the distribution means nothing.*
 
 ### What Flip Counts Do Not Measure (Matched Divergence, Unmatched Accuracy)
 
-GLOD measures **decision stability (fidelity)**, not downstream competence (accuracy). The paper conclusively demonstrates that:
-1. **Fidelity $\neq$ Accuracy:** At the exact same KL divergence, one method (Wanda) can gain +4.8 points in GSM8K, while another (Magnitude Pruning) loses -33.3 points. Random draws of pure Gaussian noise span 18 points of accuracy.
-2. **Repair is Re-sampling:** It is commonly claimed that some compression methods "repair" the dense model's wrong answers. The paper proves this is merely a **trajectory re-sampling effect** shared equally by random Gaussian noise. All perturbations correct ~25% of errors simply by shaking the model out of local minima.
+GLOD measures **decision fidelity** to the dense model, not downstream competence (accuracy):
+1. **Fidelity ≠ accuracy.** On Gemma-3-4B at the same GSM8K divergence, Wanda gains 4.8 points while magnitude pruning loses 33.3 — at the same flip rate. That contrast is specific to that model (elsewhere magnitude pruning costs at most 9.5 points), and three random draws of the same Gaussian noise at the same divergence span 18 points.
+2. **Repair is largely re-sampling.** Over 139 (model, method, divergence) cells, every perturbation — Gaussian noise included — fixes about a quarter of the dense model's wrong answers (median 25%), because changing the trajectory of a failed problem re-samples its answer. Wanda's 40% on Gemma-3-4B is the top of that range, a few points above the best Gaussian seed.
+3. **Across models, divergence predicts changed answers poorly** (leave-one-model-out R² = 0.31 for √KL).
+4. **A count cannot tell a paraphrase from a changed quantity.** Two LLM judges from different families (Qwen2.5-72B, Mistral-Small-24B) disagree on how many flips change mathematical content (25.5% vs 43.2% for magnitude pruning) but agree that magnitude pruning's flips are only modestly more consequential than Wanda's (+5.7 and +6.5 points); inter-judge agreement 82% (Cohen's kappa 0.60). On a blind sample of 99 flips, a human annotator agrees with each judge on 85% of items (kappa 0.53 / 0.61), marks 24% as consequential (between the judges' 15% and 29% on the same items), and finds no difference between the two methods. Items, key and labels are in [`results/human_eval/`](results/human_eval/).
 
-Therefore, while TV replaces the need for statistical fidelity evaluation, it **does not** replace empirical zero-shot benchmarking for task capability.
+Divergences and flip counts therefore screen decision fidelity; they **do not** replace benchmarks of task capability.
 
-### Insurmountable Ceiling
+### What to report when evaluating a compressed model
 
-We tested the resilience of the law by trying to force the network to make mistakes (Adversarial Attacks focused on maximizing flips, conditioned on a KL ceiling). The result shows that even an omnipotent attacker barely manages to extract 17% more errors than a simple honest compressor, proving that the exchange rate is, in fact, a fundamental geometric barrier.
+`python -m glod report --dense <model> --compressed cfg:gptq4 --out report/` writes items 1–3 below (TV, flips and KL per corpus, flips/TV, κ, J, and speculative-acceptance estimates) as JSON and Markdown, for any grid configuration or any checkpoint that shares the tokenizer.
 
-<div align="center">
-  <img src="results/graficos/attacks_chart.png" alt="Adversarial Attacks vs Honest Baseline" width="700"/>
-</div>
+1. Report **total variation next to KL, per corpus** — TV converts into flips at a ratio near one; KL's conversion moves with the corpus.
+2. Compare KL values **only within one corpus and one reference model**.
+3. When the consumer needs exact agreement (speculative drafts, cached outputs, regression tests), report the **flip rate** itself, and screen drafts by TV on task prompts.
+4. When comparing accuracy at matched divergence, report **lost and repaired answers separately**, next to Gaussian noise of the same divergence over several seeds — a net gain inside that range is not evidence of repair.
+
+### Can a compressor exploit the flip directions? (negative result)
+
+At fixed divergence, an optimized perturbation halves the flip rate — which suggests a quantizer that keeps its error out of the flip directions. We tested it (`python -m glod amq`): re-fitting the group scales of 4-bit GPTQ on Qwen3-4B end to end (same codes, same bits, same kernel), on the model's own responses to 6000 prompts disjoint from every evaluation. **Plain KL self-distillation lowered flips by 11–35%** on the task corpora and on held-out code; three decision-aimed objectives (smooth flip count, margin displacement at fragile tokens, TV at fragile tokens) **at best matched it**, also with a rank-16 correction. With these parameterizations, lowering divergence is what lowers flips. The variants export to AWQ format and run in vLLM with Marlin kernels (`python -m glod amq-eval export`; `scripts/vllm_spec_bench.py` measures wall-clock speculative decoding).
 
 ### Speculative Decoding Predictor
 
-Speculative decoding accepts a draft token exactly when it matches the target's decision. Because Total Variation (and its geometric KL approximation) tracks decision flips, **GLOD can predict speculative decoding acceptance without instantiating the speculative system.**
-
-On compressed self-drafts, the theory predicts the actual measured speculative acceptance with **$R^2 = 0.95$ (MAPE 2.5%)**. Furthermore, the paper demonstrates that while the KL-based approximation breaks down for cross-model drafts, **Total Variation (TV)** continues to predict acceptance reliably without any fitted constants.
+Greedy speculative decoding accepts a draft token exactly when it matches the target's decision, so the relevant quantity is the draft's flip rate against the target. Over 43 target–draft pairs (23 compressed self-drafts, 20 smaller same-family drafts), **TV predicts that per-token flip rate with a mean error of 4.3% (self-drafts) and 3.6% (cross-model) with no calibration**, whereas κ·√KL must be calibrated on the task corpus and still errs by 9–12%. Converted to acceptance, 1 − TV gives **R² = 0.955 (MAPE 2.5%)** on self-drafts and **R² = 0.85** cross-model. If both models are already run under teacher forcing, the measured agreement sequence itself is the best predictor (R² ≈ 0.98–0.99). Under **sampling**, acceptance is exactly 1 − TV per position; TV measured under teacher forcing transfers to the positions sampled speculative decoding actually visits with R² = 0.95 / 0.89 and mean error 1.3% / 1.0% (self / cross-model).
 
 <div align="center">
-  <img src="results/graficos/speculative_chart.png" alt="Speculative Decoding Prediction" width="700"/>
+  <img src="results/graficos/speculative_chart.png" alt="Speculative decoding acceptance predicted from total variation" width="520"/>
 </div>
 
 ---
 
 ## Impact Metrics
 
-| 72B+ | 10+ | 5.7x | ~25% |
+| 72B | 802 | 70% | ~25% |
 | :---: | :---: | :---: | :---: |
-| **Model Scale** | **Compressors Tested** | **Oracle Gap** | **Repair is Re-sampling** |
-| Validity confirmed on Qwen2.5-72B | Quantization, Pruning, and Attacks | Compressors use 17% of the oracle budget | Apparent repair of wrong answers is a trajectory re-sampling effect shared by Gaussian noise |
+| **Model Scale** | **Configurations** | **Jensen share of κ** | **Repair is largely re-sampling** |
+| Up to Qwen2.5-72B | 19 models, 9 perturbation families, 5 corpora | of the variance of log κ comes from KL being averaged before the square root | of the dense model's wrong answers are fixed by any perturbation, noise included |
 
 ---
 
@@ -124,17 +136,17 @@ On compressed self-drafts, the theory predicts the actual measured speculative a
 We created two practical tools so the community can validate geometric predictions without running heavy GPU simulations:
 
 ### 1. Web Simulator (Landing Page)
-Open the [GLOD Web Simulator](https://beatrizalmeidaf.github.io/glod/index-en.html) in your browser to access an interactive graphical visualization that compares traditional techniques with the geometric limit.
+The interactive simulator lives on the [`gh-pages` branch](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/gh-pages) (`index.html`, `index-pt.html`): pick a model, corpus and compressor, and it compares the paper's two predictions, κ·√KL and total variation, with the closest real measurement.
 
 ### 2. Test the law against real measurements, without a GPU
 
-The file [`data/measurements.csv`](data/measurements.csv) contains the **802 measured configurations** from the paper — model, corpus, family, configuration, KL, and flips. The script below uses only the Python standard library and **simulates nothing**: it compares the prediction against what was actually observed.
+The file [`data/measurements.csv`](data/measurements.csv) contains the **802 measured configurations** from the paper — model, corpus, family, configuration, KL, flips and TV. The script below uses only the Python standard library and **simulates nothing**: it compares the prediction against what was actually observed.
 
 ```bash
 # predicted vs measured, configuration by configuration, on one reference
 $ python3 scripts/test_formula.py --model gemma-3-4b-it --corpus gsm8k
 
-measured kappa (Eq. 3, window 0.001 < KL < 0.05) : 0.1299
+measured kappa (Eq. 4, window 0.001 < KL < 0.05) : 0.1299
 fitted exponent in log-log                       : 0.5179  (R2 0.9960)
 
 config       family               KL  measured flips predicted      error
@@ -153,7 +165,7 @@ $ python3 scripts/test_formula.py --list       # the 54 available references
 $ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # just the prediction
 ```
 
-The `--families` mode reproduces Table 5 of the paper using solely the public CSV, and [`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) locks this agreement in place.
+The `--families` mode reproduces the in-sample family deviations behind the paper's family table (clustered by reference; the paper additionally refits each curve without the family and clusters by model) using solely the public CSV, and [`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) locks this agreement in place.
 
 ---
 
@@ -163,7 +175,7 @@ The complete thesis structure, historical results, and rebuttals are detailed in
 
 ```text
 data/
-└── measurements.csv      # the 802 measurements from the paper (KL, flips) — testable without GPU
+└── measurements.csv      # the 802 measurements from the paper (KL, flips, TV) — testable without GPU
 glod/
 ├── paths.py              # paths and references (environment variables)
 ├── cli.py                # `glod <stage>` — central dispatcher
