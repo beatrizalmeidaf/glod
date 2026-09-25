@@ -114,6 +114,25 @@ def build_prompts_mmlu_en(tokenizer, n: int, seed: int, cache_dir: str) -> list[
     return out
 
 
+def build_prompts_code(tokenizer, n: int, seed: int, cache_dir: str) -> list[dict]:
+    """Codigo: tarefas do MBPP (split de teste), resposta gerada pelo proprio modelo.
+
+    Corpus de validacao fora da amostra: nao entra em nenhum ajuste do paper. Tokens de
+    codigo tem margens muito diferentes das de prosa ou matematica (sintaxe quase
+    determinada, nomes e literais incertos), entao testam se a lei transfere.
+    """
+    from datasets import load_dataset
+
+    ds = load_dataset("google-research-datasets/mbpp", "full", split="test", cache_dir=cache_dir)
+    idx = random.Random(seed).sample(range(len(ds)), min(n, len(ds)))
+    out = []
+    for i in idx:
+        r = ds[i]
+        text = ("Write a Python function for the task below. Reply with the code only.\n\n"
+                f"{r['text']}\nYour code should pass this test:\n{r['test_list'][0]}")
+        out.append({"prompt": _chat(tokenizer, text), "gold": "", "source": "code"})
+    return out
+
 def build_prompts_wikitext(tokenizer, n: int, seed: int, cache_dir: str,
                            prompt_tokens: int = 64) -> list[dict]:
     """Continuacao de texto livre: o prompt pede para continuar um trecho da wikitext.
