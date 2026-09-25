@@ -2,7 +2,7 @@
 # Confere o basico antes de gastar GPU: diretorios montados e GPU visivel.
 set -euo pipefail
 
-for d in "$EWS_RESULTS" "$EWS_HF_CACHE"; do
+for d in "$GLOD_RESULTS" "$GLOD_HF_CACHE"; do
   if [ ! -d "$d" ]; then
     echo "aviso: $d nao existe no container (monte com -v); criando vazio" >&2
     mkdir -p "$d"

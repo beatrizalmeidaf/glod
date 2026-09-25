@@ -1,6 +1,6 @@
 # Imagem para rodar o pipeline em outra maquina com GPU NVIDIA.
 #
-#   docker build -f docker/Dockerfile -t ews:latest .
+#   docker build -f docker/Dockerfile -t glod:latest .
 #
 # O torch vem do indice cu128 (a DGX de origem roda CUDA 12.8, driver 580.x).
 # Nada de pesos nem de resultados dentro da imagem: modelos e saidas entram por
@@ -12,11 +12,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     HF_HUB_ENABLE_HF_TRANSFER=1 \
-    EWS_RESULTS=/results \
-    EWS_HF_CACHE=/hf_cache \
-    EWS_RAW=/workspace/results/raw \
-    EWS_DATA=/workspace/data \
-    EWS_FIGS=/workspace/results/figs
+    GLOD_RESULTS=/results \
+    GLOD_HF_CACHE=/hf_cache \
+    GLOD_RAW=/workspace/results/raw \
+    GLOD_DATA=/workspace/data \
+    GLOD_FIGS=/workspace/results/figs
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip python3-dev git make ca-certificates && \
@@ -32,7 +32,7 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install -r requirements.txt && \
     python3 -m pip install pytest ruff
 
-COPY ews ./ews
+COPY glod ./glod
 COPY scripts ./scripts
 COPY tests ./tests
 COPY Makefile README.md ./
@@ -43,4 +43,4 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["ews", "--help"]
+CMD ["glod", "--help"]
