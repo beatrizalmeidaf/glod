@@ -1,4 +1,4 @@
-# Guia Completo: Termos e Testes do Elastic Weight Streaming (EWS)
+# Guia Completo: Termos e Testes do GLOD (GLOD)
 
 Projeto focado em otimizar e simular a inferência de Large Language Models (LLMs), especificamente usando a arquitetura Gemma 3. O objetivo principal é descobrir como rodar esses modelos gigantes de forma mais barata e rápida (usando menos precisão ou pulando camadas), sem perder a qualidade final na resposta.
 
@@ -63,6 +63,6 @@ Isso garante que as manipulações dinâmicas de tensor não estejam quebrando a
 ---
 
 ## Resumo do contexto
-Tratei do **montante de testes matematicamente rigorosos**. Eles não estão testando se o LLM "fala bem", estão testando se as operações matemáticas de compressão de pesos e pular camadas (Elastic Weight Streaming) estão sendo injetadas corretamente sem vazar memória, sem estragar os estados internos (KV Caches), e sem distorcer as estimativas de custo e uso de RAM. 
+Tratei do **montante de testes matematicamente rigorosos**. Eles não estão testando se o LLM "fala bem", estão testando se as operações matemáticas de compressão de pesos e pular camadas (GLOD) estão sendo injetadas corretamente sem vazar memória, sem estragar os estados internos (KV Caches), e sem distorcer as estimativas de custo e uso de RAM. 
 
-Qualquer alteração na pasta `ews/core/` que quebre o fluxo dos dados será capturada em segundos rodando `pytest tests/` (ou chamando os arquivos um a um).
+Qualquer alteração na pasta `glod/core/` que quebre o fluxo dos dados será capturada em segundos rodando `pytest tests/` (ou chamando os arquivos um a um).

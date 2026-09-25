@@ -2,157 +2,177 @@
   
 <img src="results/graficos/logo.png" alt="GLOD Logo" width="200" />
 
-# Geometric Law of Damage (GLOD)
+# GLOD (Geometric Law of Damage)
 
-**A Lei Geométrica do Dano de Compressão em LLMs.**
+> **Note on "Damage"**: In the context of GLOD, "Damage" refers strictly to **distributional deviation** from the dense oracle (teacher-forcing decision flips), not a loss in semantic capability or downstream task accuracy.
+
+**GLOD** is the analytical framework and evaluation suite introduced in the paper: *How Divergence Becomes Decision Flips in Compressed Language Models*.
+
+While the paper describes the theoretical discovery, the **GLOD** package provides the empirical infrastructure to measure how the margin geometry of an LLM converts statistical perturbations (such as compression) into decision changes ("damage").
 
 [![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![build](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![paper](https://img.shields.io/badge/arxiv-Paper-red.svg)]()
-[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://beatrizalmeidaf.github.io/glod/index-pt.html)
+[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://beatrizalmeidaf.github.io/glod/index-en.html)
 
 </div>
 
 ---
 
-## What is Geometric Law of Damage?
+## What is the Geometric Law of Damage?
 
-Hoje temos dezenas de técnicas para comprimir pesos de LLMs e acelerar a inferência (Poda, Quantização, Layer Skipping, etc). Quando escolhemos um desses métodos, a grande dúvida é: **eles causam tipos diferentes de "dano" ao raciocínio do modelo, ou apenas diferem na quantidade de dano?**
+Today we have dozens of techniques to compress LLM weights and accelerate inference (Pruning, Quantization, Layer Skipping, etc). When we choose one of these methods, the big question is: **do they cause different types of "damage" to the model's reasoning, or do they merely differ in the amount of damage?**
 
-**GLOD responde a essa pergunta matematicamente.** Foi medido exaustivamente o efeito de 10+ compressores através de múltiplos modelos (de 1B até 72B parâmetros) e múltiplos domínios. A descoberta central é que:
+**GLOD answers this question mathematically.** We exhaustively measured the effect of 10+ compressors across **19 models** from six families (Gemma-3, Qwen3/2.5, Mistral, Phi, OLMo-2, and Llama-3), ranging from 1B to 72B parameters, on five corpora — **802 configurations** in total. The central discovery is that:
 
-> Para uma dada referência (par modelo + distribuição de avaliação), perturbações estáticas de pesos mecanicamente distintas convertem divergência KL em mudanças de decisão (*flips*) **a uma taxa que difere entre si em no máximo 5%**, fixada pela **geometria das margens do modelo**.
+> For a given reference (model + evaluation distribution pair), **Total Variation (TV)** — a first-order divergence — tracks the decision flip rate nearly one-for-one (**flips ≈ TV**) with no free constant. Meanwhile, KL Divergence works only because it approximates TV via the **model's margin geometry**.
 
 <div align="center">
-  <h3><strong>flips ≈ κ · √KL</strong></h3>
+  <h3><strong>flips ≈ TV ≈ κ · √KL</strong></h3>
 </div>
 
-**De onde vem o expoente.** A forma de raiz quadrada não é um achado empírico: a divergência é de **segunda** ordem na perturbação de pesos (expansão de Taylor com a métrica de Informação de Fisher):
+**Why KL needs a coefficient.** The square root form is not an empirical finding: divergence is **second** order in the weight perturbation (Taylor expansion with the Fisher Information metric):
 
 $$ \mathrm{KL} = \frac{1}{2} \delta^\top F \delta + O(\lVert\delta\rVert^3) $$
 
-enquanto o deslocamento da margem de decisão é de **primeira** ordem. A proporcionalidade com $\sqrt{\mathrm{KL}}$ segue daí. Verificamos que o regime quadrático vale até ~11% de desvio dentro da janela onde κ é definido, e quebra acima de ~2 nats.
+while the decision margin displacement is **first** order. The proportionality with $\sqrt{\mathrm{KL}}$ follows directly. We verified that the quadratic regime holds up to ~11% deviation within the window where κ is defined, breaking down above ~2 nats.
 
-**O que é empírico** é que um **único** κ descreve arredondamento, poda, quantização de KV-cache, remoção de camadas e ruído isotrópico do mesmo modelo — o fator de proporcionalidade varia apenas 2,7% (CV mediano) entre famílias dentro de uma referência.
+**What is empirical** is that a **single** κ describes rounding, pruning, KV-cache quantization, layer removal, and isotropic noise on the same model — the proportionality factor varies by only 2.7% (median CV) across families within a reference.
 
-- **O algoritmo importa pouco, mas não é irrelevante:** condicionado ao KL, AWQ de 4 bits e poda Wanda ficam a menos de 1,2% um do outro em *flips*. O desvio máximo entre todas as nove famílias testadas é de 5%, e quatro delas têm desvio estatisticamente detectável.
+- **The algorithm matters little, but it is not irrelevant:** conditional on KL, 4-bit AWQ and Wanda pruning are within 1.2% of each other in *flips*. The maximum deviation among all nine tested families is 5%, and four of them have a statistically detectable deviation.
 
-### Quanto a família do método ainda importa, a KL casado
+### How much the method family still matters, at matched KL
 
-Para cada referência ajustamos a lei de potência da própria referência e medimos o quanto cada família se desvia dela. O desvio é **multiplicativo sobre a taxa de flips**; os intervalos são agrupados por referência (a unidade independente), sobre as 742 configurações.
+For each reference, we fit the reference's own power law and measure how much each family deviates from it. The deviation is **multiplicative over the flip rate**; intervals are clustered by reference (the independent unit), over all 802 configurations.
 
-| Compressor | Família | Flips vs. a lei da referência | IC 95% | refs |
+| Compressor | Family | Flips vs. reference law | 95% CI | refs |
 |:---|:---|:---:|:---:|:---:|
-| **Remoção de camadas** | Estrutural | **0.950** ▼ | [0.927, 0.973] | 14 |
-| **KV-cache (quant.)** | Cache | **0.987** ▼ | [0.979, 0.995] | 46 |
-| Magnitude | Poda | 0.990 | [0.976, 1.004] | 46 |
-| Ruído gaussiano | Controle | 0.994 | [0.985, 1.003] | 47 |
-| **GPTQ** | Quantização | 0.997 | [0.988, 1.005] | 47 |
-| **AWQ** | Quantização | 0.997 | [0.988, 1.006] | 47 |
-| **RTN** | Arredondamento | **1.009** ▲ | [1.004, 1.013] | 47 |
-| Wanda | Poda | 1.009 | [0.993, 1.024] | 46 |
-| **SparseGPT** | Poda | **1.028** ▲ | [1.012, 1.043] | 45 |
+| **Layer Removal** | Structural | **0.950** ▼ | [0.927, 0.973] | 14 |
+| **KV-cache (quant.)** | Cache | **0.989** ▼ | [0.982, 0.997] | 51 |
+| Gaussian Noise | Control | 0.993 | [0.985, 1.001] | 52 |
+| Magnitude | Pruning | 0.995 | [0.982, 1.009] | 51 |
+| **GPTQ** | Quantization | 0.996 | [0.988, 1.003] | 52 |
+| **AWQ** | Quantization | 0.997 | [0.989, 1.005] | 52 |
+| Wanda | Pruning | 1.005 | [0.991, 1.020] | 51 |
+| **RTN** | Rounding | **1.008** ▲ | [1.004, 1.012] | 52 |
+| **SparseGPT** | Pruning | **1.023** ▲ | [1.009, 1.038] | 50 |
 
-*Fungibilidade estrita é falsa: quatro das nove famílias têm intervalo excluindo 1, e a ordem é interpretável — remover camadas inteiras produz 5,0% **menos** flips por unidade de divergência, poda calibrada 2,8% **mais**. O enunciado correto é fungibilidade a menos de 5%, não igualdade.*
+*In the common KL window where all families coexist ($0.03 \leq \KL \leq 0.20$), eight of the nine methods have a maximum deviation of just 1.6%. After Holm correction, only Layer Removal significantly alters the geometry (5.5% fewer flips). Strict fungibility holds closely in the common regime.*
 
 <div align="center">
-  <img src="results/graficos/methods_chart.png" alt="Comparação de Métodos vs Teoria" width="700"/>
+  <img src="results/graficos/methods_chart.png" alt="Methods Comparison vs Theory" width="700"/>
 </div>
 
-- **Teto da Perturbação Estática:** um otimizador com acesso total ao gradiente e orçamento de KL fixo atinge no máximo **1.17×** a taxa de um compressor padrão (e **nada** em dois dos quatro corpora), enquanto o objetivo inverso corta a taxa pela metade. A assimetria — fácil perder dano decisório a divergência fixa, difícil ganhá-lo — é o resultado robusto. Apresentamos os tetos como estimativas de primeira ordem sob as hipóteses declaradas, não como limites provados.
-- **O Futuro:** Como compressores estáticos usam apenas ~17% do orçamento informacional do oráculo perfeito, GLOD demonstra que a otimização de próxima geração exigirá **compressores argmax-aware** (alocação de bits per-token).
+- **The Static Perturbation Ceiling:** an optimizer with full gradient access and a fixed KL budget achieves at most **1.17×** the rate of a standard compressor (and **nothing** on two of the four corpora), while the inverse objective cuts the rate in half. The asymmetry — easy to lose decision damage at fixed divergence, hard to gain it — is the robust result. We present the ceilings as first-order estimates under the stated assumptions, not as proven bounds.
+- **The Future:** Because static compressors use only ~17% of the perfect oracle's informational budget, GLOD demonstrates that next-generation optimization will require **argmax-aware compressors** (per-token bit allocation).
 
-### Validação Empírica por Domínio
+### Empirical Validation by Domain
 
-Duas grandezas distintas, que a versão anterior desta tabela confundia: o **expoente** (a inclinação em log-log, que a teoria prevê ser ≈ ½) e **κ** (a taxa de câmbio, que depende do par modelo+corpus).
+Two distinct quantities, which earlier versions of this table conflated: the **exponent** (the slope in log-log, which theory predicts to be ≈ ½) and **κ** (the exchange rate, which depends on the model+corpus pair).
 
-| Corpus | Escopo | Expoente conjunto | R² conjunto | κ (faixa entre modelos) |
+| Corpus | Scope | Pooled Exponent | Pooled R² | κ (range across models) |
 |:---|:---|:---:|:---:|:---:|
-| **GSM8K** | Respostas lógicas exatas | 0.513 | 0.954 | 0.13 – 0.24 |
-| **Mix (GSM8K+MMLU-PT)** | Misto | 0.512 | 0.960 | 0.19 – 0.35 |
-| **MMLU-en** | Conhecimento geral | 0.483 | 0.937 | 0.21 – 0.45 |
-| **WikiText** | Geração de texto livre | 0.462 | 0.931 | 0.27 – 0.56 |
-| **WikiText (natural)** | Texto real, sem geração | 0.468 | 0.978 | 0.39 – 0.56 |
+| **GSM8K** | Exact logical answers | 0.511 | 0.954 | 0.13 – 0.24 |
+| **Mix (GSM8K+MMLU-PT)** | Mixed | 0.511 | 0.961 | 0.19 – 0.35 |
+| **MMLU-en** | General knowledge | 0.482 | 0.941 | 0.21 – 0.45 |
+| **WikiText** | Free text generation | 0.464 | 0.937 | 0.27 – 0.56 |
+| **WikiText (natural)** | Real text, no generation | 0.471 | 0.980 | 0.39 – 0.56 |
 
-*O R² conjunto é menor que o de qualquer referência isolada (todos ≥ 0.990) porque as referências diferem no intercepto. κ varia 1,6–2,6× entre corpora **dentro de um mesmo modelo**: reportar "o κ do modelo X" sem nomear a distribuição não significa nada.*
+*The pooled R² is lower than that of any isolated reference (all ≥ 0.990) because the references differ in intercept. κ varies 1.6–2.6× between corpora **within the same model**: reporting "the κ of model X" without naming the distribution means nothing.*
 
-### Teto Intransponível
+**Why does κ vary? (The Jensen Factor):** The paper shows that 70% of this variance across corpora is caused by the **Jensen inequality**. Because KL divergence averages the per-token divergence *before* the square root is applied, it structurally penalizes high-entropy distributions (like MMLU or natural text) compared to low-entropy ones (like GSM8K). Total Variation (TV) is first-order at every token and avoids this Jensen flattening entirely.
 
-Testamos a resiliência da lei tentando forçar a rede a errar (Ataques Adversariais focados em maximizar flips, condicionados a um teto de KL). O resultado mostra que mesmo um atacante onipotente mal consegue arrancar 17% a mais de erros do que um compressor honesto simples, comprovando que a taxa de câmbio é, de fato, uma barreira geométrica fundamental.
+### What Flip Counts Do Not Measure (Matched Divergence, Unmatched Accuracy)
+
+GLOD measures **decision stability (fidelity)**, not downstream competence (accuracy). The paper conclusively demonstrates that:
+1. **Fidelity $\neq$ Accuracy:** At the exact same KL divergence, one method (Wanda) can gain +4.8 points in GSM8K, while another (Magnitude Pruning) loses -33.3 points. Random draws of pure Gaussian noise span 18 points of accuracy.
+2. **Repair is Re-sampling:** It is commonly claimed that some compression methods "repair" the dense model's wrong answers. The paper proves this is merely a **trajectory re-sampling effect** shared equally by random Gaussian noise. All perturbations correct ~25% of errors simply by shaking the model out of local minima.
+
+Therefore, while TV replaces the need for statistical fidelity evaluation, it **does not** replace empirical zero-shot benchmarking for task capability.
+
+### Insurmountable Ceiling
+
+We tested the resilience of the law by trying to force the network to make mistakes (Adversarial Attacks focused on maximizing flips, conditioned on a KL ceiling). The result shows that even an omnipotent attacker barely manages to extract 17% more errors than a simple honest compressor, proving that the exchange rate is, in fact, a fundamental geometric barrier.
 
 <div align="center">
-  <img src="results/graficos/attacks_chart.png" alt="Ataques Adversariais vs Baseline Honesto" width="700"/>
+  <img src="results/graficos/attacks_chart.png" alt="Adversarial Attacks vs Honest Baseline" width="700"/>
+</div>
+
+### Speculative Decoding Predictor
+
+Speculative decoding accepts a draft token exactly when it matches the target's decision. Because Total Variation (and its geometric KL approximation) tracks decision flips, **GLOD can predict speculative decoding acceptance without instantiating the speculative system.**
+
+On compressed self-drafts, the theory predicts the actual measured speculative acceptance with **$R^2 = 0.95$ (MAPE 2.5%)**. Furthermore, the paper demonstrates that while the KL-based approximation breaks down for cross-model drafts, **Total Variation (TV)** continues to predict acceptance reliably without any fitted constants.
+
+<div align="center">
+  <img src="results/graficos/speculative_chart.png" alt="Speculative Decoding Prediction" width="700"/>
 </div>
 
 ---
 
 ## Impact Metrics
 
-| 72B+ | 10+ | 5.7x | 0.99 |
+| 72B+ | 10+ | 5.7x | ~25% |
 | :---: | :---: | :---: | :---: |
-| **Model Scale** | **Compressors Tested** | **Oracle Gap** | **R² Accuracy** |
-| Validade confirmada no Qwen2.5-72B | Quantização, Poda e Ataques | Compressores usam 17% do orçamento do oráculo | R² por referência (o conjunto é 0.93–0.98) |
+| **Model Scale** | **Compressors Tested** | **Oracle Gap** | **Repair is Re-sampling** |
+| Validity confirmed on Qwen2.5-72B | Quantization, Pruning, and Attacks | Compressors use 17% of the oracle budget | Apparent repair of wrong answers is a trajectory re-sampling effect shared by Gaussian noise |
 
 ---
 
 ## Quick Start
 
-Criamos duas ferramentas práticas para que a comunidade possa validar as previsões geométricas sem precisar rodar simulações pesadas em GPU:
+We created two practical tools so the community can validate geometric predictions without running heavy GPU simulations:
 
-### 1. Simulador Web (Landing Page)
-Abra o [Simulador GLOD Web](https://beatrizalmeidaf.github.io/glod/index-pt.html) no seu navegador para acessar uma visualização gráfica interativa que compara técnicas tradicionais com o limite geométrico.
+### 1. Web Simulator (Landing Page)
+Open the [GLOD Web Simulator](https://beatrizalmeidaf.github.io/glod/index-en.html) in your browser to access an interactive graphical visualization that compares traditional techniques with the geometric limit.
 
-### 2. Teste a lei contra as medições reais, sem GPU
+### 2. Test the law against real measurements, without a GPU
 
-O arquivo [`data/measurements.csv`](data/measurements.csv) (39 KB) traz as **742 configurações
-medidas** do artigo — modelo, corpus, família, configuração, KL e flips. O script abaixo usa
-apenas a biblioteca padrão do Python e **não simula nada**: confronta a previsão com o que foi
-de fato observado.
+The file [`data/measurements.csv`](data/measurements.csv) contains the **802 measured configurations** from the paper — model, corpus, family, configuration, KL, and flips. The script below uses only the Python standard library and **simulates nothing**: it compares the prediction against what was actually observed.
 
 ```bash
-# previsto x medido, configuração por configuração, numa referência
+# predicted vs measured, configuration by configuration, on one reference
 $ python3 scripts/test_formula.py --model gemma-3-4b-it --corpus gsm8k
 
-kappa medido (Eq. 3, janela 0.001 < KL < 0.05) : 0.1299
-expoente ajustado em log-log                   : 0.5179  (R2 0.9960)
+measured kappa (Eq. 3, window 0.001 < KL < 0.05) : 0.1299
+fitted exponent in log-log                       : 0.5179  (R2 0.9960)
 
-config       familia              KL  flips medido   previsto     erro
+config       family               KL  measured flips predicted      error
 ----------------------------------------------------------------------
 u8           rtn             0.00067       0.00361    0.00336   -6.8%
 kv4          kv              0.01043       0.01327    0.01327   +0.0%
 u5           rtn             0.01835       0.01740    0.01760   +1.1%
 mag20        magnitude       0.04413       0.02839    0.02729   -3.9%
 ...
-erro absoluto mediano dentro da janela de kappa   : 1.1%
+median absolute error inside the kappa window     : 1.1%
 ```
 
 ```bash
-$ python3 scripts/test_formula.py --families   # a pergunta central, a KL casado
-$ python3 scripts/test_formula.py --list       # as 49 referências disponíveis
-$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # só a previsão
+$ python3 scripts/test_formula.py --families   # the central question, at matched KL
+$ python3 scripts/test_formula.py --list       # the 54 available references
+$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # just the prediction
 ```
 
-O modo `--families` reproduz a Tabela 5 do artigo a partir do CSV público sozinho, e
-[`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) trava essa concordância.
+The `--families` mode reproduces Table 5 of the paper using solely the public CSV, and [`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) locks this agreement in place.
 
 ---
 
 ## Repository Map
 
-A tese completa, o histórico de resultados e as refutações estão detalhados em [docs/thesis_structure.md](docs/thesis_structure.md). O rigor dos testes matemáticos de idempotência das manipulações está em [DOC_TERMOS_E_TESTES.md](DOC_TERMOS_E_TESTES.md).
+The complete thesis structure, historical results, and rebuttals are detailed in [docs/thesis_structure.md](docs/thesis_structure.md). The rigorous mathematical tests for idempotency of manipulations are in [DOC_TERMOS_E_TESTES.md](DOC_TERMOS_E_TESTES.md).
 
 ```text
 data/
-└── measurements.csv      # as 742 medições do artigo (KL, flips) — testáveis sem GPU
-ews/
-├── paths.py              # caminhos e referências (variáveis de ambiente)
-├── cli.py                # `ews <estágio>` — dispatcher central
-├── core/                 # biblioteca principal: compressores, pontuação, inferência
-├── corpora/              # datasets e oráculos (MMLU, GSM8K, etc)
+└── measurements.csv      # the 802 measurements from the paper (KL, flips) — testable without GPU
+glod/
+├── paths.py              # paths and references (environment variables)
+├── cli.py                # `glod <stage>` — central dispatcher
+├── core/                 # main library: compressors, scoring, inference
+├── corpora/              # datasets and oracles (MMLU, GSM8K, etc)
 └── pipelines/
-    ├── fidelity/         # grade de compressão e medição da lei
-    ├── adversarial/      # ataques por gradiente
-    ├── speculative/      # previsores teóricos
+    ├── fidelity/         # compression grid and law measurement
+    ├── adversarial/      # gradient attacks
+    ├── speculative/      # theoretical predictors
     └── ...
 ```
 
@@ -164,18 +184,18 @@ ews/
 ```bash
 make install          # pip install -e .
 make install-dev      # + ruff
-make test             # Validação (alguns necessitam de GPU local)
+make test             # Validation (some require a local GPU)
 ```
 
-**Variáveis de Ambiente (`ews/paths.py`):**
-| Variável | Default | Descrição |
+**Environment Variables (`glod/paths.py`):**
+| Variable | Default | Description |
 |---|---|---|
-| `EWS_RESULTS` | `/local/$USER/ews_results/fid` | Diretório destino dos cálculos |
-| `EWS_HF_CACHE` | `/local/$USER/hf_cache` | Pesos baixados do HuggingFace |
-| `EWS_DATA` | `data` | Artefatos estáticos menores |
+| `GLOD_RESULTS` | `/local/$USER/ews_results/fid` | Output directory for calculations |
+| `GLOD_HF_CACHE` | `/local/$USER/hf_cache` | Downloaded HuggingFace weights |
+| `GLOD_DATA` | `data` | Smaller static artifacts |
 
 ### Running the Grid
-Uma varredura principal ponta a ponta (Qwen3-4B):
+A main end-to-end sweep (Qwen3-4B):
 ```bash
 make corpus  MODEL=Qwen/Qwen3-4B DEVICE=cuda:0
 make grid    MODEL=Qwen/Qwen3-4B DEVICE=cuda:0
@@ -184,10 +204,10 @@ make adv     MODEL=Qwen/Qwen3-4B DEVICE=cuda:0
 ```
 
 ### Slurm Integration
-Execução distribuída paralela idempotente (as tasks retomam de onde pararam):
+Idempotent parallel distributed execution (tasks resume from where they left off):
 ```bash
-make sweep-dry     # valida array 
-make slurm         # enfileira as tarefas
+make sweep-dry     # validates array 
+make slurm         # queues the tasks
 make slurm-status  # logs
 ```
 
