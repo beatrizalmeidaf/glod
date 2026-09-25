@@ -80,7 +80,7 @@
         }
 
         .nav-logo img {
-            height: 32px;
+            height: 62px;
         }
 
         .nav-links {
@@ -432,8 +432,13 @@
         /* Use Cases Grid */
         .use-cases-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .uc-card {
@@ -605,7 +610,7 @@
     <nav>
         <div class="nav-logo">
             <img src="logo.png" alt="GLOD Logo">
-            <span>Geometric Law of Damage</span>
+            <span>GLOD</span>
         </div>
         <div class="nav-links">
             <a href="#simulator">Simulador</a>
@@ -624,8 +629,9 @@
 
     <header class="hero">
         <div class="hero-content">
-            <h1>O dano de compressão tem uma taxa de câmbio fixa.</h1>
-            <p>A Geometric Law of Damage (GLOD) prova que qualquer perturbação estática de pesos converte a divergência KL em trocas de decisão (flips) a uma taxa única e previsível, ditada pela geometria do modelo denso.</p>
+            <h1>Variação Total é a Verdadeira Moeda da Compressão.</h1>
+            <p>O GLOD prova que a Variação Total prevê trocas de decisão de forma exata (1:1), e que a divergência KL precisa de uma constante ditada pela geometria do modelo para tentar acompanhá-la.</p>
+            <p style="font-size: 0.9rem; margin-top: 1rem; color: #888;"><strong>Nota sobre "Dano":</strong> GLOD mede desvio distribucional (flips), não capacidade semântica. A variação da conversão de KL entre corpora é explicada em 70% pela <strong>Desigualdade de Jensen</strong>—a Variação Total (TV) contorna isso naturalmente.</p>
             
             <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                 <code style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
@@ -649,7 +655,7 @@
                 <div class="term-success">[glod] ✔ Done. κ = 0.352</div>
                 <br>
                 <div style="color: #fff">--- Model Geometry Law ---</div>
-                <div class="term-sys">Predicted Flips = 0.352 * √KL</div>
+                <div class="term-sys">Flips ≈ TV ≈ 0.352 * √KL</div>
                 <div class="term-sys">R² fitness across all techniques: <span style="color: #00f0ff">0.991</span></div>
             </div>
         </div>
@@ -668,12 +674,17 @@
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
                 <h3 class="uc-title">Engenheiros de Otimização</h3>
-                <p class="uc-desc">Use a taxa de câmbio teórica para prever matematicamente o impacto de uma poda ou quantização sem a necessidade de rodar pipelines caros de inferência.</p>
+                <p class="uc-desc">Use a taxa de câmbio teórica para prever matematicamente o impacto de uma poda ou quantização sem a necessidade de rodar pipelines caros de inferência. <strong style="color: #ff5f56;">Aviso: TV mede fidelidade, não competência. Não substitui o ranqueamento empírico de acurácia zero-shot.</strong></p>
             </div>
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                 <h3 class="uc-title">Designers de Hardware</h3>
                 <p class="uc-desc">Projete novos formatos de ponto flutuante cientes do "teto intransponível" dos compressores estáticos demonstrado pelo GLOD.</p>
+            </div>
+            <div class="uc-card">
+                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                <h3 class="uc-title">Speculative Decoding</h3>
+                <p class="uc-desc">Preveja a taxa de aceitação exata de modelos rascunho (self-drafts) sem escrever uma única linha de código. O GLOD rastreia a aceitação com 95.3% de precisão.</p>
             </div>
         </div>
     </section>
@@ -682,7 +693,7 @@
     <section class="benchmark-section">
         <span class="section-label">Aderência Universal</span>
         <h2 class="section-title">Validado em todos os Compressores Tradicionais</h2>
-        <p class="section-desc">Testamos o limite geométrico contra as principais técnicas de Poda e Quantização da literatura. Todas elas servem apenas como aproximações do oráculo estatístico ditado por nossa fórmula.</p>
+        <p class="section-desc">Testamos o limite geométrico contra as principais técnicas de Poda e Quantização da literatura. Na janela comum onde as famílias coexistem, 8 de 9 métodos têm variação máxima de apenas 1.6%. Apenas Layer Removal altera a geometria significativamente.</p>
         
         <div class="benchmark-wrapper">
             <table class="bm-table">
@@ -690,52 +701,84 @@
                     <tr>
                         <th class="bm-rank"></th>
                         <th>COMPRESSOR</th>
-                        <th>FAMÍLIA</th>
-                        <th>DESVIO EMPÍRICO</th>
-                        <th>ERRO PADRÃO (SE)</th>
-                        <th>LIMITES DE KL</th>
+                        <th>FAMILY</th>
+                        <th>FLIPS VS REF. LAW</th>
+                        <th>95% CI</th>
+                        <th>REFS</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr style="background: rgba(39, 201, 63, 0.1); border-left: 3px solid #27c93f;">
                         <td class="bm-rank">🏆 1</td>
-                        <td class="bm-model" style="color: #27c93f;">GPTQ<span class="bm-sub">Post-Training Quantization</span></td>
-                        <td>Quantização</td>
-                        <td class="bm-highlight" style="color: #27c93f;">-0.14 pp</td>
-                        <td>± 0.17 pp</td>
-                        <td>0.01 - 0.15</td>
+                        <td class="bm-model" style="color: #27c93f;">AWQ<span class="bm-sub">Activation-aware Weight Quantization</span></td>
+                        <td>Quantization</td>
+                        <td class="bm-highlight" style="color: #27c93f;">0.997</td>
+                        <td>[0.989, 1.005]</td>
+                        <td>52</td>
                     </tr>
                     <tr>
                         <td class="bm-rank">🥈 2</td>
-                        <td class="bm-model">AWQ<span class="bm-sub">Activation-aware Weight Quantization</span></td>
-                        <td>Quantização</td>
-                        <td class="bm-highlight">-0.14 pp</td>
-                        <td>± 0.19 pp</td>
-                        <td>0.01 - 0.15</td>
+                        <td class="bm-model">GPTQ<span class="bm-sub">Post-Training Quantization</span></td>
+                        <td>Quantization</td>
+                        <td class="bm-highlight">0.996</td>
+                        <td>[0.988, 1.003]</td>
+                        <td>52</td>
                     </tr>
                     <tr>
                         <td class="bm-rank">🥉 3</td>
-                        <td class="bm-model">RTN<span class="bm-sub">Round-To-Nearest</span></td>
-                        <td>Arredondamento</td>
-                        <td class="bm-highlight">+0.36 pp</td>
-                        <td>± 0.09 pp</td>
-                        <td>0.005 - 0.10</td>
+                        <td class="bm-model">Wanda<span class="bm-sub">Pruning by Weights and Activations</span></td>
+                        <td>Pruning</td>
+                        <td class="bm-highlight">1.005</td>
+                        <td>[0.991, 1.020]</td>
+                        <td>51</td>
                     </tr>
                     <tr>
                         <td class="bm-rank">4</td>
-                        <td class="bm-model">Wanda<span class="bm-sub">Pruning by Weights and Activations</span></td>
-                        <td>Poda</td>
-                        <td class="bm-highlight">+0.37 pp</td>
-                        <td>± 0.33 pp</td>
-                        <td>0.04 - 0.22</td>
+                        <td class="bm-model">Magnitude<span class="bm-sub">Pruning</span></td>
+                        <td>Pruning</td>
+                        <td class="bm-highlight">0.995</td>
+                        <td>[0.982, 1.009]</td>
+                        <td>51</td>
                     </tr>
                     <tr>
                         <td class="bm-rank">5</td>
+                        <td class="bm-model">Gaussian Noise<span class="bm-sub">Control</span></td>
+                        <td>Control</td>
+                        <td class="bm-highlight">0.993</td>
+                        <td>[0.985, 1.001]</td>
+                        <td>52</td>
+                    </tr>
+                    <tr>
+                        <td class="bm-rank">6</td>
+                        <td class="bm-model">RTN<span class="bm-sub">Round-To-Nearest</span></td>
+                        <td>Rounding</td>
+                        <td class="bm-highlight">1.008 ▲</td>
+                        <td>[1.004, 1.012]</td>
+                        <td>52</td>
+                    </tr>
+                    <tr>
+                        <td class="bm-rank">7</td>
+                        <td class="bm-model">KV-cache<span class="bm-sub">Quantization</span></td>
+                        <td>Cache</td>
+                        <td class="bm-highlight">0.989 ▼</td>
+                        <td>[0.982, 0.997]</td>
+                        <td>51</td>
+                    </tr>
+                    <tr>
+                        <td class="bm-rank">8</td>
                         <td class="bm-model">SparseGPT<span class="bm-sub">Massive Language Models can be Accurately Pruned</span></td>
-                        <td>Poda</td>
-                        <td class="bm-highlight">+1.18 pp</td>
-                        <td>± 0.32 pp</td>
-                        <td>0.04 - 0.22</td>
+                        <td>Pruning</td>
+                        <td class="bm-highlight">1.023 ▲</td>
+                        <td>[1.009, 1.038]</td>
+                        <td>50</td>
+                    </tr>
+                    <tr style="background: rgba(255, 95, 86, 0.05); border-left: 3px solid #ff5f56;">
+                        <td class="bm-rank">9</td>
+                        <td class="bm-model" style="color: #ff5f56;">Layer Removal<span class="bm-sub">Structural</span></td>
+                        <td>Structural</td>
+                        <td class="bm-highlight" style="color: #ff5f56;">0.950 ▼</td>
+                        <td>[0.927, 0.973]</td>
+                        <td>14</td>
                     </tr>
                 </tbody>
             </table>
@@ -792,16 +835,16 @@
             <div class="stat-desc">Teto de otimização restante</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">0.99</div>
-            <div class="stat-label">Acurácia R²</div>
-            <div class="stat-desc">Na previsão de flips via geometria</div>
+            <div class="stat-number">~25%</div>
+            <div class="stat-label">Reparo é Re-amostragem</div>
+            <div class="stat-desc">Correções aparentes de respostas erradas são puro re-sampling de trajetórias, um efeito igualado por ruído Gaussiano</div>
         </div>
     </section>
 
     <section id="simulator" class="tool-section">
         <div class="section-header">
             <h2>Execute o Teste Comparativo (Medições Reais)</h2>
-            <p>Valide a fórmula GLOD você mesmo contra DADOS EMPÍRICOS REAIS de 742 configurações medidas. Escolha um domínio, um modelo e uma técnica de compressão, depois defina uma restrição de KL alvo. O simulador irá puxar <strong>a medição real mais próxima</strong> do nosso dataset para comparar estritamente ao limite matemático.</p>
+            <p>Valide a fórmula GLOD você mesmo contra DADOS EMPÍRICOS REAIS de 802 configurações medidas. Escolha um domínio, um modelo e uma técnica de compressão, depois defina uma restrição de KL alvo. O simulador irá puxar <strong>a medição real mais próxima</strong> do nosso dataset para comparar estritamente ao limite matemático.</p>
         </div>
 
         <div class="calculator-grid">
@@ -843,7 +886,7 @@
 
                 <div class="form-group">
                     <label for="kl-input">Divergência KL Alvo</label>
-                    <input type="number" id="kl-input" min="0.001" max="1.5" step="0.01" value="0.10">
+                    <input type="number" id="kl-input" min="0.001" max="1.5" step="0.001" value="0.100">
                 </div>
 
                 <button id="run-btn" class="btn-primary" style="width: 100%; margin-top: 1rem;">Buscar Medição Real</button>
@@ -856,11 +899,11 @@
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
                         <span style="font-size: 0.9rem;">Fórmula GLOD (<span style="color:var(--accent-cyan);">Teórico</span>)</span>
-                        <span style="color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: bold;" id="res-ews">0.00%</span>
+                        <span style="color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: bold;" id="res-glod">0.00%</span>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
-                        <span style="font-size: 0.9rem;">Flips Medidos (<span style="color:#fff;">Empírico</span>)</span>
+                        <span style="font-size: 0.9rem;">Variação Total / Flips (<span style="color:#fff;">Medição Empírica</span>)</span>
                         <span style="color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: bold;" id="res-empirical">0.00%</span>
                     </div>
                     
@@ -981,14 +1024,15 @@
                 datasets.push({
                     label: 'Sua Seleção',
                     data: [{ x: selectedMeasurement.kl, y: selectedMeasurement.flip }],
-                    backgroundColor: '#FFD700',
-                    borderColor: '#fff',
+                    backgroundColor: '#39FF14',
+                    borderColor: '#39FF14',
                     borderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
+                    pointRadius: 10,
+                    pointStyle: 'star',
+                    pointHoverRadius: 10,
                     order: 1
                 });
-                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: #FFD700; border: 1px solid #fff;"></div> Seleção</div>`;
+                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: #39FF14; border: 1px solid #fff;"></div> Seleção</div>`;
             }
 
             datasets.unshift({
@@ -1023,7 +1067,7 @@
                                 ticks: { color: '#a0a0b0' }
                             },
                             y: {
-                                title: { display: true, text: 'Decision Flips (Fração)', color: '#a0a0b0' },
+                                title: { display: true, text: 'Variação Total / Flips (Fração)', color: '#a0a0b0' },
                                 min: 0,
                                 grid: { color: 'rgba(255,255,255,0.05)' },
                                 ticks: { color: '#a0a0b0' }
@@ -1073,14 +1117,14 @@
             }
 
             selectedMeasurement = closest;
-            const ewsPredicted = currentKappa * Math.sqrt(closest.kl);
+            const glodPredicted = currentKappa * Math.sqrt(closest.kl);
             const empiricalResult = closest.flip;
-            const diff = empiricalResult - ewsPredicted;
+            const diff = empiricalResult - glodPredicted;
 
             document.getElementById('res-config').textContent = `${closest.family.toUpperCase()} (${closest.config})`;
             document.getElementById('res-kl').textContent = closest.kl.toFixed(4);
             
-            document.getElementById('res-ews').textContent = (ewsPredicted * 100).toFixed(2) + "%";
+            document.getElementById('res-glod').textContent = (glodPredicted * 100).toFixed(2) + "%";
             document.getElementById('res-empirical').textContent = (empiricalResult * 100).toFixed(2) + "%";
             
             let errElem = document.getElementById('res-error');
@@ -1091,7 +1135,19 @@
             updateChart();
         });
 
+        
+        document.querySelectorAll('.qs-copy').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const text = e.currentTarget.previousElementSibling.textContent.trim();
+                navigator.clipboard.writeText(text);
+                const originalColor = e.currentTarget.style.color;
+                e.currentTarget.style.color = '#27c93f';
+                setTimeout(() => e.currentTarget.style.color = originalColor, 1500);
+            });
+        });
+
         initData();
+    
     </script>
 </body>
 </html>
