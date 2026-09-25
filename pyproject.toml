@@ -3,27 +3,27 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ews"
+name = "glod"
 version = "0.1.0"
 description = "O dano de compressao e uma taxa de cambio fixa: KL, margens e os limites das perturbacoes estaticas de pesos"
 requires-python = ">=3.10"
 dynamic = ["dependencies"]
 
 [project.scripts]
-ews = "ews.cli:main"
+glod = "glod.cli:main"
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools.packages.find]
-include = ["ews*"]
+include = ["glod*"]
 
 [tool.ruff]
 line-length = 110
 target-version = "py310"
 
 [tool.ruff.lint]
-# E402: os modulos de pipeline importam ews.paths depois do docstring/constantes de proposito
+# E402: os modulos de pipeline importam glod.paths depois do docstring/constantes de proposito
 ignore = ["E402"]
 
 [tool.pytest.ini_options]

@@ -1,5 +1,5 @@
 # ======================================================================
-# EWS - Elastic Weight Streaming | Fase 1: Simulacao in-VRAM (Oraculo)
+# GLOD - dependencias (Fase 1: simulacao in-VRAM, oraculo)
 # ----------------------------------------------------------------------
 # Alvo: DGX H100 (CUDA 12.8, driver 580.x). O torch ja esta instalado no
 # host (2.8.0+cu128); o pin abaixo e permissivo de proposito para nao

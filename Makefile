@@ -1,4 +1,4 @@
-# EWS - pipeline do paper. Cada alvo e um estagio; nada aqui esconde um experimento
+# GLOD - pipeline do paper. Cada alvo e um estagio; nada aqui esconde um experimento
 # longo atras de um nome curto: os alvos que usam GPU dizem quanto custam no README.
 #
 #   make help                      lista os alvos
@@ -16,14 +16,14 @@ RANK    ?= 16
 SEED    ?= 0
 N_PROMPTS ?= 256
 PY      ?= python3
-EWS     ?= $(PY) -m ews
+GLOD     ?= $(PY) -m glod
 
-# caminhos (tambem lidos pelo codigo via ews/paths.py)
-export EWS_RESULTS  ?= /local/$(USER)/ews_results/fid
-export EWS_RAW      ?= results/raw
-export EWS_HF_CACHE ?= /local/$(USER)/hf_cache
-export EWS_DATA     ?= data
-export EWS_FIGS     ?= results/figs
+# caminhos (tambem lidos pelo codigo via glod/paths.py)
+export GLOD_RESULTS  ?= /local/$(USER)/ews_results/fid
+export GLOD_RAW      ?= results/raw
+export GLOD_HF_CACHE ?= /local/$(USER)/hf_cache
+export GLOD_DATA     ?= data
+export GLOD_FIGS     ?= results/figs
 
 .DEFAULT_GOAL := help
 .PHONY: help install install-dev test lint datasets corpus grid analyze law slope domain flip-dirs \
@@ -35,7 +35,7 @@ help:
 	@printf "alvos:\n"
 	@grep -E '^[a-z][a-z0-9-]*:.*?## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t 24
 	@printf "\nvariaveis: MODEL=$(MODEL) DEVICE=$(DEVICE) CORPUS=$(CORPUS) SEED=$(SEED)\n"
-	@printf "resultados: EWS_RESULTS=$(EWS_RESULTS)\n"
+	@printf "resultados: GLOD_RESULTS=$(GLOD_RESULTS)\n"
 
 # ---------------------------------------------------------------- ambiente
 install:            ## instala o pacote (editavel) e as dependencias
@@ -52,94 +52,94 @@ test:               ## testes (scripts com asserts; os que carregam modelo exige
 	done; exit $$fail
 
 lint:               ## ruff no pacote
-	$(PY) -m ruff check ews tests scripts
+	$(PY) -m ruff check glod tests scripts
 
-datasets:           ## baixa GSM8K, MMLU (en), wikitext-2 para EWS_DATA/datasets
+datasets:           ## baixa GSM8K, MMLU (en), wikitext-2 para GLOD_DATA/datasets
 	$(PY) scripts/download_datasets.py
 
 # ------------------------------------------------- fidelidade (Secoes 2 e 3)
 corpus:             ## corpus greedy da referencia (MODEL, CORPUS)
-	$(EWS) grid gen --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --n-prompts $(N_PROMPTS)
+	$(GLOD) grid gen --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --n-prompts $(N_PROMPTS)
 
 grid:               ## pontua a grade de compressores no corpus (CONFIGS)
-	$(EWS) grid score --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --configs bf16 $(CONFIGS)
+	$(GLOD) grid score --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --configs bf16 $(CONFIGS)
 
 grid-fp32:          ## idem com lm_head em fp32 (sem empates do bf16)
-	$(EWS) grid score --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --logits-fp32 \
+	$(GLOD) grid score --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --logits-fp32 \
 	    --configs bf16 $(CONFIGS)
 
 analyze:            ## law/theory/prop/d3/d4 -> analysis/*.json
-	$(EWS) analyze law
-	$(EWS) analyze theory
-	$(EWS) analyze prop
+	$(GLOD) analyze law
+	$(GLOD) analyze theory
+	$(GLOD) analyze prop
 
 law: analyze        ## alias de analyze
 
 slope:              ## kappa x geometria de margens
-	$(EWS) slope
+	$(GLOD) slope
 
 domain:             ## kappa por dominio
-	$(EWS) domain
+	$(GLOD) domain
 
 flip-dirs:          ## rank efetivo das direcoes de flip e teto do oraculo
-	$(EWS) flip-dirs --model $(MODEL)
+	$(GLOD) flip-dirs --model $(MODEL)
 
 fungibility:        ## kappa por subconjunto de modulos, a KL casado
-	$(EWS) fungibility --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS)
+	$(GLOD) fungibility --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS)
 
 fidelity-all: corpus grid analyze slope domain flip-dirs  ## a cadeia de fidelidade inteira
 
 # ------------------------------------------------------ adversarial (Secao 4)
 adv:                ## ataque multicamada, maligno e benigno (KL, STEPS, RANK, SEED)
-	$(EWS) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --seed $(SEED) \
+	$(GLOD) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --seed $(SEED) \
 	    --steps $(STEPS) --rank $(RANK) --kl-budget $(KL) --modes malign benign \
 	    --tag $(if $(filter 0,$(SEED)),multi,seed$(SEED))
 
 adv-fp32:           ## idem com logits em fp32 (P5)
-	$(EWS) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --logits-fp32 \
+	$(GLOD) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --logits-fp32 \
 	    --steps $(STEPS) --rank $(RANK) --kl-budget $(KL) --modes malign benign --tag fp32
 
 adv-no-norm:        ## ablacao sem a escala de saida (P7)
-	$(EWS) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --no-output-scale \
+	$(GLOD) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --no-output-scale \
 	    --steps $(STEPS) --rank $(RANK) --kl-budget 0.05 --modes malign benign --tag semnorma
 
 adv-single:         ## ataque de 1 camada, rank completo
-	$(EWS) adv-single --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS)
+	$(GLOD) adv-single --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS)
 
 adv-report:         ## consolida a Secao 4 -> analysis/adversarial.json
-	$(EWS) adv-report
+	$(GLOD) adv-report
 
 adversarial-all: adv adv-fp32 adv-no-norm adv-report  ## ataque + ablacoes + relatorio
 
 # ------------------------------------------------- tarefa e especulativa (5 e 6)
 matched-kl:         ## equivalencia a KL casado + TOST
-	$(EWS) matched-kl --model $(MODEL) --device $(DEVICE)
+	$(GLOD) matched-kl --model $(MODEL) --device $(DEVICE)
 
 crack:              ## rachadura do GSM8K (H1/H2/H3)
-	$(EWS) crack --model $(MODEL) --device $(DEVICE)
+	$(GLOD) crack --model $(MODEL) --device $(DEVICE)
 
 closedloop:         ## geracao real e especulativa real
-	$(EWS) closedloop gsm8k --model $(MODEL) --device $(DEVICE)
+	$(GLOD) closedloop gsm8k --model $(MODEL) --device $(DEVICE)
 
 spec-bench:         ## especulativa com relogio
-	$(EWS) spec-bench --target $(MODEL) --device $(DEVICE)
+	$(GLOD) spec-bench --target $(MODEL) --device $(DEVICE)
 
 spec-law:           ## os tres previsores -> analysis/spec_law.json
-	$(EWS) spec-law
+	$(GLOD) spec-law
 
 # ------------------------------------------------------- adaptativo (Secao 7)
 adaptive-bits:      ## A1-A2 (teacher forcing)
-	$(EWS) adaptive-bits
+	$(GLOD) adaptive-bits
 
 adaptive-closedloop:  ## A3 (geracao real, KV misto)
-	$(EWS) adaptive-closedloop --model $(MODEL) --device $(DEVICE)
+	$(GLOD) adaptive-closedloop --model $(MODEL) --device $(DEVICE)
 
 adaptive-report:    ## A3 contra a fronteira estatica
-	$(EWS) adaptive-report
+	$(GLOD) adaptive-report
 
 # --------------------------------------------------------------------- saidas
-figures:            ## as 6 figuras do paper em EWS_FIGS
-	$(EWS) figures
+figures:            ## as 6 figuras do paper em GLOD_FIGS
+	$(GLOD) figures
 
 all: fidelity-all adversarial-all spec-law adaptive-report figures  ## tudo o que entra no paper
 
@@ -181,22 +181,22 @@ slurm:              ## submete a varredura: job array (um par por tarefa) + anal
 
 slurm-status:       ## fila, tarefas do array e marcos concluidos
 	@squeue -u $(USER) -o "%.10i %.10P %.14j %.2t %.11M %.6D %R" || true
-	@echo "marcos concluidos: $$(ls $(EWS_RESULTS)/_stamps 2>/dev/null | wc -l)"
+	@echo "marcos concluidos: $$(ls $(GLOD_RESULTS)/_stamps 2>/dev/null | wc -l)"
 
 # --------------------------------------------------------------------- docker
 docker-build:       ## imagem com CUDA + dependencias
-	docker build -f docker/Dockerfile -t ews:latest .
+	docker build -f docker/Dockerfile -t glod:latest .
 
 docker-shell:       ## shell no container, com GPUs e volumes
-	docker run --rm -it --gpus all $(DOCKER_MOUNTS) ews:latest bash
+	docker run --rm -it --gpus all $(DOCKER_MOUNTS) glod:latest bash
 
 docker-run:         ## roda um alvo do Makefile dentro do container: make docker-run TARGET="grid MODEL=..."
-	docker run --rm -it --gpus all $(DOCKER_MOUNTS) ews:latest make $(TARGET)
+	docker run --rm -it --gpus all $(DOCKER_MOUNTS) glod:latest make $(TARGET)
 
 DOCKER_MOUNTS = -v $(CURDIR):/workspace \
-                -v $(EWS_RESULTS):/results \
-                -v $(EWS_HF_CACHE):/hf_cache \
-                -e EWS_RESULTS=/results -e EWS_HF_CACHE=/hf_cache -e HF_TOKEN
+                -v $(GLOD_RESULTS):/results \
+                -v $(GLOD_HF_CACHE):/hf_cache \
+                -e GLOD_RESULTS=/results -e GLOD_HF_CACHE=/hf_cache -e HF_TOKEN
 
 clean-pyc:          ## remove bytecode
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +
