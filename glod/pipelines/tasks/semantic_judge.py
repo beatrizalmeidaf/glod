@@ -50,6 +50,17 @@ METHODS = ("mag", "wanda")
 QUESTION = re.compile(r"user\n(.*?)<end_of_turn>", re.S)
 
 
+def question_text(prompt: str) -> str:
+    """Enunciado sem o template do chat: da instrucao ate o primeiro marcador de fim de
+    turno. Na Gemma coincide com o grupo de QUESTION; serve tambem a Qwen, OLMo, Phi, Llama."""
+    if (m := QUESTION.search(prompt)):
+        return m.group(1).strip()
+    i = prompt.find("Solve the following problem")
+    body = prompt[i:] if i >= 0 else prompt
+    cuts = [k for k in (body.find(x) for x in ("<|", "<end_of_turn>", "[/INST]", "</s>")) if k > 0]
+    return body[:min(cuts)].strip() if cuts else body.strip()
+
+
 def out_dir(model: str):
     d = OUT / "semantic" / slug(model)
     d.mkdir(parents=True, exist_ok=True)
@@ -137,7 +148,7 @@ def load_judge(args):
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     jtok = AutoTokenizer.from_pretrained(args.judge, cache_dir=args.cache_dir)
-    mem = {i: "78GiB" for i in args.judge_gpus}
+    mem = {i: args.judge_mem for i in args.judge_gpus}
     judge = AutoModelForCausalLM.from_pretrained(args.judge, cache_dir=args.cache_dir, torch_dtype=torch.bfloat16,
                                                  device_map="auto", max_memory=mem).eval()
     ids_same = jtok.encode("SAME", add_special_tokens=False)[0]
@@ -286,8 +297,7 @@ def stage_flips(args) -> None:
                      "n_flips_nontie": n_flip, "items": items}
         LOGGER.info("[%s] %d flips fora de empates; %d amostrados", kind, n_flip, len(items))
     bank.restore()
-    res["questions"] = [(m.group(1).strip() if (m := QUESTION.search(r["prompt"])) else r["prompt"])
-                        for r in corpus.records]
+    res["questions"] = [question_text(r["prompt"]) for r in corpus.records]
     (out_dir(args.model) / "flips_tf.json").write_text(json.dumps(res))
 
 
@@ -318,7 +328,7 @@ def stage_judge_tf(args) -> None:
     boot = [rng.choice(a, len(a)).mean() - rng.choice(b, len(b)).mean() for _ in range(4000)]
     out["diff_mag_minus_wanda"] = {"share": float(a.mean() - b.mean()),
                                    "lo": float(np.percentile(boot, 2.5)), "hi": float(np.percentile(boot, 97.5))}
-    (OUT / "analysis" / "semantic_judge.json").write_text(json.dumps(out, indent=1))
+    (OUT / "analysis" / args.out_name).write_text(json.dumps(out, indent=1))
     for k in METHODS:
         v = out["summary"][k]
         print(f"{k:6s} n={v['n']} flips que mudam o conteudo: {100 * v['share_different']:.1f}% | "
@@ -336,6 +346,7 @@ def main(argv=None) -> int:
     p.add_argument("--target", type=float, default=0.1)
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--judge-gpus", type=int, nargs="+", default=[0, 1])
+    p.add_argument("--judge-mem", default="78GiB", help="memoria maxima do juiz por GPU (GPUs compartilhadas)")
     p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR)
     p.add_argument("--n-task", type=int, default=400)
     p.add_argument("--max-new-tokens", type=int, default=320)
@@ -343,6 +354,8 @@ def main(argv=None) -> int:
     p.add_argument("--calib-batch", type=int, default=8)
     p.add_argument("--cont-tokens", type=int, default=40)
     p.add_argument("--n-flips", type=int, default=400, help="flips amostrados por metodo")
+    p.add_argument("--out-name", default="semantic_judge.json",
+                   help="arquivo em analysis/ (judge-tf); um segundo juiz grava em outro nome")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s | %(message)s", datefmt="%H:%M:%S")
     torch.set_grad_enabled(False)
