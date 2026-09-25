@@ -1,0 +1,13 @@
+{
+ "extends": "results/holdout_predictions.json",
+ "extends_sha256": "e5d686340e7bf19a7099b343d7aa0de63fb9985e2d96dff1133ecdf1b470c2c8",
+ "registered_at": "2026-09-25T10:47:51",
+ "models": [
+  "Qwen/Qwen3-8B",
+  "allenai/OLMo-2-1124-7B-Instruct",
+  "microsoft/Phi-3.5-mini-instruct",
+  "google/gemma-3-12b-it",
+  "NousResearch/Meta-Llama-3-8B-Instruct"
+ ],
+ "criteria": "identicos a P1-P5 do arquivo original, sem alteracao; relatados para os 8 modelos juntos e para os 5 novos separadamente"
+}
