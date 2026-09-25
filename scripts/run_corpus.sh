@@ -10,7 +10,7 @@
 #   paper  core + grade em fp32 + kappa x geometria + dominio + teto + fungibilidade
 #          + ataque em fp32 (P5) + ataque sem a norma final (P7) + sementes 1 e 2 (P8)
 #
-# Cada etapa e idempotente (pula o que ja existe em $EWS_RESULTS), entao reexecutar
+# Cada etapa e idempotente (pula o que ja existe em $GLOD_RESULTS), entao reexecutar
 # depois de uma falha nao repete trabalho. Os estagios de tarefa (matched-kl, crack),
 # de especulativa e de adaptatividade NAO entram aqui: eles nao recebem --corpus.
 set -euo pipefail
@@ -43,34 +43,34 @@ done
 [ -n "$MODEL" ] || { echo "falta --model" >&2; exit 2; }
 
 PY=${PY:-python3}
-EWS=("$PY" -m ews)
+GLOD=("$PY" -m glod)
 
 cmds=()
 add() { cmds+=("$*"); }
 
 # ---------------------------------------------------------------- fidelidade
-add "${EWS[*]} grid gen   --model $MODEL --device $DEVICE --corpus $CORPUS"
-add "${EWS[*]} grid score --model $MODEL --device $DEVICE --corpus $CORPUS --configs bf16 $CONFIGS"
+add "${GLOD[*]} grid gen   --model $MODEL --device $DEVICE --corpus $CORPUS"
+add "${GLOD[*]} grid score --model $MODEL --device $DEVICE --corpus $CORPUS --configs bf16 $CONFIGS"
 if [ "$PROFILE" = paper ]; then
-  add "${EWS[*]} grid score --model $MODEL --device $DEVICE --corpus $CORPUS --logits-fp32 --configs bf16 $CONFIGS"
+  add "${GLOD[*]} grid score --model $MODEL --device $DEVICE --corpus $CORPUS --logits-fp32 --configs bf16 $CONFIGS"
 fi
 if [ "$GLOBAL" = 1 ]; then
-  add "${EWS[*]} analyze law"
+  add "${GLOD[*]} analyze law"
 fi
 if [ "$PROFILE" = paper ]; then
   if [ "$GLOBAL" = 1 ]; then
-    add "${EWS[*]} analyze theory"
-    add "${EWS[*]} analyze prop"
-    add "${EWS[*]} slope"
-    add "${EWS[*]} domain"
-    add "${EWS[*]} flip-dirs --model $MODEL"
+    add "${GLOD[*]} analyze theory"
+    add "${GLOD[*]} analyze prop"
+    add "${GLOD[*]} slope"
+    add "${GLOD[*]} domain"
+    add "${GLOD[*]} flip-dirs --model $MODEL"
   fi
-  add "${EWS[*]} fungibility --model $MODEL --device $DEVICE --corpus $CORPUS"
+  add "${GLOD[*]} fungibility --model $MODEL --device $DEVICE --corpus $CORPUS"
 fi
 
 # ------------------------------------------------------------------- ataque
 adv() { # <tag> <extra flags> <kl>
-  add "${EWS[*]} adv-multi --model $MODEL --device $DEVICE --corpus $CORPUS --steps $STEPS --rank $RANK --kl-budget $3 --modes malign benign --tag $1 $2"
+  add "${GLOD[*]} adv-multi --model $MODEL --device $DEVICE --corpus $CORPUS --steps $STEPS --rank $RANK --kl-budget $3 --modes malign benign --tag $1 $2"
 }
 adv multi "" "$KL"
 if [ "$PROFILE" = paper ]; then
@@ -80,7 +80,7 @@ if [ "$PROFILE" = paper ]; then
   adv seed2 "--seed 2" "$KL"
 fi
 if [ "$GLOBAL" = 1 ]; then
-  add "${EWS[*]} adv-report"
+  add "${GLOD[*]} adv-report"
 fi
 
 # --------------------------------------------------------------------- roda
@@ -98,12 +98,12 @@ LOG="$LOGDIR/$(basename "$MODEL")__${CORPUS}__${PROFILE}.log"
 # etapas na hora, sem nem carregar o modelo. As etapas ja eram idempotentes por dentro
 # (o ataque guarda cada ponto em results_<tag>.json assim que ele termina, e a grade
 # guarda cada config em .pt), entao o pior caso e repetir a etapa em andamento.
-STAMPS=${EWS_STAMPS:-${EWS_RESULTS:-.}/_stamps}
+STAMPS=${GLOD_STAMPS:-${GLOD_RESULTS:-.}/_stamps}
 mkdir -p "$STAMPS"
 # O marco identifica a ETAPA: saem do hash a GPU (--device) e o interpretador (python3
 # ou /usr/bin/python3), senao a mesma etapa conta como duas e o trabalho se repete.
 stamp_of() {
-  printf '%s' "$1" | sed -e 's/--device [^ ]*//' -e 's#^[^ ]*python[0-9.]* -m ews#ews#' \
+  printf '%s' "$1" | sed -e 's/--device [^ ]*//' -e 's#^[^ ]*python[0-9.]* -m glod#glod#' \
       | sha1sum | cut -c1-16
 }
 

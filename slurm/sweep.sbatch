@@ -4,7 +4,7 @@
 #
 # A QOS `onejob` deste cluster permite 2 jobs rodando por usuario, entao o array vai
 # com %2: as tarefas restantes ficam na fila e entram sozinhas quando uma termina.
-#SBATCH --job-name=ews-sweep
+#SBATCH --job-name=glod-sweep
 #SBATCH --partition=h100n2,h100n3
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8

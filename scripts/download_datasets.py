@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Baixa para EWS_HF_CACHE/datasets os datasets que os corpora usam.
+"""Baixa para GLOD_HF_CACHE/datasets os datasets que os corpora usam.
 
     python scripts/download_datasets.py            # todos os que o registro conhece
     python scripts/download_datasets.py --only gsm8k mmlu_en
 
-O CSV do MMLU PT-BR nao vem daqui: ele e versionado a mao em EWS_DATA/mmlu_PT-BR.csv.
+O CSV do MMLU PT-BR nao vem daqui: ele e versionado a mao em GLOD_DATA/mmlu_PT-BR.csv.
 Falha de cota de disco e reportada por dataset e nao aborta os outros (foi o que
 aconteceu com o c4 e o humaneval na DGX).
 """
@@ -27,13 +27,13 @@ def main(argv: list[str] | None = None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--only", nargs="+", choices=sorted(SOURCES), default=sorted(SOURCES))
     p.add_argument("--cache-dir", default=None,
-                   help="default: $EWS_HF_CACHE/datasets (ou ./data/datasets se nao houver)")
+                   help="default: $GLOD_HF_CACHE/datasets (ou ./data/datasets se nao houver)")
     args = p.parse_args(argv)
 
     from datasets import load_dataset
 
     root = args.cache_dir or os.path.join(
-        os.environ.get("EWS_HF_CACHE", os.path.join(os.getcwd(), "data")), "datasets")
+        os.environ.get("GLOD_HF_CACHE", os.path.join(os.getcwd(), "data")), "datasets")
     os.makedirs(root, exist_ok=True)
     print(f"cache de datasets: {root}")
     rc = 0

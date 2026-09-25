@@ -115,17 +115,17 @@ wait
 echo "== analises globais"
 {
   for model in $MODELS; do
-    $PY -m ews flip-dirs --model "$model" || echo "flip-dirs falhou: $model" >&2
+    $PY -m glod flip-dirs --model "$model" || echo "flip-dirs falhou: $model" >&2
   done
-  $PY -m ews analyze law
+  $PY -m glod analyze law
   if [ "$PROFILE" = paper ]; then
-    $PY -m ews analyze theory
-    $PY -m ews analyze prop
-    $PY -m ews slope
-    $PY -m ews domain
+    $PY -m glod analyze theory
+    $PY -m glod analyze prop
+    $PY -m glod slope
+    $PY -m glod domain
   fi
-  $PY -m ews adv-report
-  $PY -m ews figures
+  $PY -m glod adv-report
+  $PY -m glod figures
 } 2>&1 | tee -a "$LOGDIR/sweep_global.log"
 
 echo "== resumo ($STATUS)"

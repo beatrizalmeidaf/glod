@@ -65,6 +65,6 @@ GLOBAL_ID=$(sbatch --parsable --dependency=afterany:"$ARRAY_ID" --partition="$PA
 echo "analises globais: $GLOBAL_ID (depende de $ARRAY_ID)"
 echo
 echo "acompanhe:   squeue -u $USER"
-echo "logs:        var/logs/slurm/ews-sweep_${ARRAY_ID}_*.out"
-echo "progresso:   ls \${EWS_RESULTS:-.}/_stamps | wc -l"
+echo "logs:        var/logs/slurm/glod-sweep_${ARRAY_ID}_*.out"
+echo "progresso:   ls \${GLOD_RESULTS:-.}/_stamps | wc -l"
 echo "resubmeter o que falhou: scripts/submit_slurm.sh --models '$MODELS' --corpora '$CORPORA'"

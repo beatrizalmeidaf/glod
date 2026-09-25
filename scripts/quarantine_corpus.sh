@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Tira do caminho todos os resultados de um corpus, sem apagar: move para
-# $EWS_RESULTS/_quarantine/<corpus>_<data>/ junto com os marcos das etapas dele, para
+# $GLOD_RESULTS/_quarantine/<corpus>_<data>/ junto com os marcos das etapas dele, para
 # que uma nova rodada refaca o corpus do zero em vez de pular etapas "ja feitas".
 #
 #   scripts/quarantine_corpus.sh wikitext --dry-run
 #   scripts/quarantine_corpus.sh wikitext
 #
-# Para desfazer, mova o conteudo da quarentena de volta para $EWS_RESULTS.
+# Para desfazer, mova o conteudo da quarentena de volta para $GLOD_RESULTS.
 set -euo pipefail
 
 CORPUS=${1:?uso: quarantine_corpus.sh <corpus> [--dry-run]}
 DRY=0; [ "${2:-}" = "--dry-run" ] && DRY=1
 [ "$CORPUS" != mix ] || { echo "recuso mover o corpus do paper (mix)" >&2; exit 2; }
-R=${EWS_RESULTS:?defina EWS_RESULTS}
+R=${GLOD_RESULTS:?defina GLOD_RESULTS}
 Q="$R/_quarantine/${CORPUS}_$(date +%Y%m%d_%H%M%S)"
 
 mapfile -t items < <(
