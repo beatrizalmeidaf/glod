@@ -1,0 +1,30 @@
+{
+ "registered_at": "2026-09-25T10:18:37",
+ "corpus": "code (MBPP test, greedy, 256 prompts)",
+ "models": [
+  "Qwen/Qwen3-4B",
+  "google/gemma-3-4b-it",
+  "mistralai/Mistral-7B-Instruct-v0.3"
+ ],
+ "configs": "u8 u6 u5 u4 kv4 kv3 mag20 g4 gptq4 awq4 sgpt50 wanda50 (bf16 e fp32 head)",
+ "P1_exponent_range": [
+  0.459,
+  0.578
+ ],
+ "P2_family_dev_max_pct": 5.5,
+ "P3_flip_over_tv_ref_range": [
+  0.7595576040242457,
+  1.2854174962517544
+ ],
+ "P4_c_range": [
+  0.43529436177130826,
+  0.5148958148399949
+ ],
+ "P5_kappa_from_J": {
+  "formula": "kappa_hat = median(flips/TV) * median(c) * J, medianas das 42 refs publicadas",
+  "median_flip_over_tv": 1.067145142122504,
+  "median_c": 0.4746665267915122,
+  "tolerance_rel": 0.15
+ },
+ "note": "criterios fixados antes de gerar o corpus code; nada deste corpus entra em ajuste"
+}
