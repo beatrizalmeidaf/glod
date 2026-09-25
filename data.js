@@ -52,6 +52,80 @@ const GLOD_DATA = {
   },
   "measurements": {
     "gsm8k": {
+      "Meta-Llama-3-8B-Instruct": [
+        {
+          "family": "rtn",
+          "config": "u8",
+          "kl": 0.000439536,
+          "flip": 0.00423842
+        },
+        {
+          "family": "rtn",
+          "config": "u6",
+          "kl": 0.00233231,
+          "flip": 0.0105406
+        },
+        {
+          "family": "kv",
+          "config": "kv4",
+          "kl": 0.00572604,
+          "flip": 0.0167318
+        },
+        {
+          "family": "rtn",
+          "config": "u5",
+          "kl": 0.0106842,
+          "flip": 0.023389
+        },
+        {
+          "family": "gptq",
+          "config": "gptq4",
+          "kl": 0.023993,
+          "flip": 0.0346618
+        },
+        {
+          "family": "awq",
+          "config": "awq4",
+          "kl": 0.0247259,
+          "flip": 0.0345731
+        },
+        {
+          "family": "kv",
+          "config": "kv3",
+          "kl": 0.0257838,
+          "flip": 0.036082
+        },
+        {
+          "family": "rtn",
+          "config": "u4",
+          "kl": 0.0361076,
+          "flip": 0.0429167
+        },
+        {
+          "family": "magnitude",
+          "config": "mag20",
+          "kl": 0.0412929,
+          "flip": 0.0485976
+        },
+        {
+          "family": "gauss",
+          "config": "g4",
+          "kl": 0.0428153,
+          "flip": 0.0449361
+        },
+        {
+          "family": "sparsegpt",
+          "config": "sgpt50",
+          "kl": 0.18174,
+          "flip": 0.096951
+        },
+        {
+          "family": "wanda",
+          "config": "wanda50",
+          "kl": 0.197053,
+          "flip": 0.101145
+        }
+      ],
       "Mistral-7B-Instruct-v0.3": [
         {
           "family": "rtn",
@@ -646,6 +720,80 @@ const GLOD_DATA = {
       ]
     },
     "mix": {
+      "Meta-Llama-3-8B-Instruct": [
+        {
+          "family": "rtn",
+          "config": "u8",
+          "kl": 0.000588803,
+          "flip": 0.00568269
+        },
+        {
+          "family": "rtn",
+          "config": "u6",
+          "kl": 0.00368041,
+          "flip": 0.0166447
+        },
+        {
+          "family": "kv",
+          "config": "kv4",
+          "kl": 0.00826421,
+          "flip": 0.0235731
+        },
+        {
+          "family": "rtn",
+          "config": "u5",
+          "kl": 0.0153522,
+          "flip": 0.0328268
+        },
+        {
+          "family": "awq",
+          "config": "awq4",
+          "kl": 0.0392522,
+          "flip": 0.0514408
+        },
+        {
+          "family": "kv",
+          "config": "kv3",
+          "kl": 0.0405304,
+          "flip": 0.05169
+        },
+        {
+          "family": "gptq",
+          "config": "gptq4",
+          "kl": 0.044163,
+          "flip": 0.0555338
+        },
+        {
+          "family": "magnitude",
+          "config": "mag20",
+          "kl": 0.0446722,
+          "flip": 0.0583811
+        },
+        {
+          "family": "rtn",
+          "config": "u4",
+          "kl": 0.0626985,
+          "flip": 0.0651908
+        },
+        {
+          "family": "gauss",
+          "config": "g4",
+          "kl": 0.0757592,
+          "flip": 0.0724158
+        },
+        {
+          "family": "sparsegpt",
+          "config": "sgpt50",
+          "kl": 0.311424,
+          "flip": 0.145876
+        },
+        {
+          "family": "wanda",
+          "config": "wanda50",
+          "kl": 0.318012,
+          "flip": 0.145282
+        }
+      ],
       "Mistral-7B-Instruct-v0.3": [
         {
           "family": "rtn",
@@ -2786,6 +2934,80 @@ const GLOD_DATA = {
       ]
     },
     "mmlu_en": {
+      "Meta-Llama-3-8B-Instruct": [
+        {
+          "family": "rtn",
+          "config": "u8",
+          "kl": 0.000863208,
+          "flip": 0.00877193
+        },
+        {
+          "family": "rtn",
+          "config": "u6",
+          "kl": 0.00560835,
+          "flip": 0.0253376
+        },
+        {
+          "family": "kv",
+          "config": "kv4",
+          "kl": 0.0133835,
+          "flip": 0.0378644
+        },
+        {
+          "family": "rtn",
+          "config": "u5",
+          "kl": 0.0206423,
+          "flip": 0.0482141
+        },
+        {
+          "family": "gptq",
+          "config": "gptq4",
+          "kl": 0.053466,
+          "flip": 0.0745614
+        },
+        {
+          "family": "awq",
+          "config": "awq4",
+          "kl": 0.0545944,
+          "flip": 0.0767702
+        },
+        {
+          "family": "kv",
+          "config": "kv3",
+          "kl": 0.0587776,
+          "flip": 0.0786318
+        },
+        {
+          "family": "magnitude",
+          "config": "mag20",
+          "kl": 0.061786,
+          "flip": 0.0851319
+        },
+        {
+          "family": "rtn",
+          "config": "u4",
+          "kl": 0.0893105,
+          "flip": 0.0949767
+        },
+        {
+          "family": "gauss",
+          "config": "g4",
+          "kl": 0.0965961,
+          "flip": 0.100341
+        },
+        {
+          "family": "sparsegpt",
+          "config": "sgpt50",
+          "kl": 0.332507,
+          "flip": 0.195033
+        },
+        {
+          "family": "wanda",
+          "config": "wanda50",
+          "kl": 0.369157,
+          "flip": 0.19355
+        }
+      ],
       "Mistral-7B-Instruct-v0.3": [
         {
           "family": "rtn",
@@ -3380,6 +3602,80 @@ const GLOD_DATA = {
       ]
     },
     "wikitext": {
+      "Meta-Llama-3-8B-Instruct": [
+        {
+          "family": "rtn",
+          "config": "u8",
+          "kl": 0.0011551,
+          "flip": 0.0130997
+        },
+        {
+          "family": "rtn",
+          "config": "u6",
+          "kl": 0.00771881,
+          "flip": 0.0362512
+        },
+        {
+          "family": "kv",
+          "config": "kv4",
+          "kl": 0.0160072,
+          "flip": 0.0514902
+        },
+        {
+          "family": "rtn",
+          "config": "u5",
+          "kl": 0.029463,
+          "flip": 0.0688685
+        },
+        {
+          "family": "magnitude",
+          "config": "mag20",
+          "kl": 0.0681282,
+          "flip": 0.103596
+        },
+        {
+          "family": "gptq",
+          "config": "gptq4",
+          "kl": 0.0690802,
+          "flip": 0.0980863
+        },
+        {
+          "family": "kv",
+          "config": "kv3",
+          "kl": 0.0712622,
+          "flip": 0.103508
+        },
+        {
+          "family": "awq",
+          "config": "awq4",
+          "kl": 0.0743504,
+          "flip": 0.108373
+        },
+        {
+          "family": "gauss",
+          "config": "g4",
+          "kl": 0.129655,
+          "flip": 0.139906
+        },
+        {
+          "family": "rtn",
+          "config": "u4",
+          "kl": 0.130602,
+          "flip": 0.140375
+        },
+        {
+          "family": "sparsegpt",
+          "config": "sgpt50",
+          "kl": 0.391724,
+          "flip": 0.239018
+        },
+        {
+          "family": "wanda",
+          "config": "wanda50",
+          "kl": 0.481669,
+          "flip": 0.261466
+        }
+      ],
       "Mistral-7B-Instruct-v0.3": [
         {
           "family": "rtn",
@@ -4048,6 +4344,80 @@ const GLOD_DATA = {
       ]
     },
     "wikitext_nat": {
+      "Meta-Llama-3-8B-Instruct": [
+        {
+          "family": "rtn",
+          "config": "u8",
+          "kl": 0.00106339,
+          "flip": 0.0139866
+        },
+        {
+          "family": "rtn",
+          "config": "u6",
+          "kl": 0.00585272,
+          "flip": 0.0362829
+        },
+        {
+          "family": "kv",
+          "config": "kv4",
+          "kl": 0.0107515,
+          "flip": 0.0479863
+        },
+        {
+          "family": "rtn",
+          "config": "u5",
+          "kl": 0.0223623,
+          "flip": 0.0668888
+        },
+        {
+          "family": "gptq",
+          "config": "gptq4",
+          "kl": 0.043874,
+          "flip": 0.0914887
+        },
+        {
+          "family": "kv",
+          "config": "kv3",
+          "kl": 0.0543478,
+          "flip": 0.10418
+        },
+        {
+          "family": "awq",
+          "config": "awq4",
+          "kl": 0.0554392,
+          "flip": 0.105352
+        },
+        {
+          "family": "gauss",
+          "config": "g4",
+          "kl": 0.10168,
+          "flip": 0.140154
+        },
+        {
+          "family": "rtn",
+          "config": "u4",
+          "kl": 0.102034,
+          "flip": 0.143301
+        },
+        {
+          "family": "magnitude",
+          "config": "mag20",
+          "kl": 0.136695,
+          "flip": 0.171953
+        },
+        {
+          "family": "sparsegpt",
+          "config": "sgpt50",
+          "kl": 0.302865,
+          "flip": 0.233453
+        },
+        {
+          "family": "wanda",
+          "config": "wanda50",
+          "kl": 0.431263,
+          "flip": 0.283414
+        }
+      ],
       "Mistral-7B-Instruct-v0.3": [
         {
           "family": "rtn",
