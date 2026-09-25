@@ -9,6 +9,7 @@ portanto trocar o id passado em `--corpus`, e nada mais.
   mmlu_pt   so MMLU PT-BR (multipla escolha em portugues, CSV em data/)
   mmlu_en   so MMLU em ingles (cais/mmlu, split de teste)
   wikitext  continuacao de texto livre (wikitext-2-raw-v1), gerada pelo modelo
+  code      tarefas do MBPP, codigo gerado pelo modelo (validacao fora da amostra)
   wikitext_nat  o texto REAL da wikitext como sequencia (sem geracao): unica opcao
             valida para modelos base, que entram em laco com greedy
 
@@ -18,6 +19,7 @@ todas as metricas por token (flips, KL, TV) se aplicam do mesmo jeito.
 from __future__ import annotations
 
 from glod.corpora.token_oracle import (
+    build_prompts_code,
     build_prompts_gsm8k,
     build_prompts_wikitext_natural,
     build_prompts_mmlu_en,
@@ -33,6 +35,7 @@ CORPORA = {
     "mmlu_en": ("mmlu_en",),
     "wikitext": ("wikitext",),
     "wikitext_nat": ("wikitext_nat",),   # texto real, sem geracao
+    "code": ("code",),                   # MBPP; so validacao fora da amostra
 }
 
 
@@ -51,6 +54,8 @@ def build_records(corpus: str, tokenizer, n_prompts: int, seed: int, cache_dir: 
             out += build_prompts_mmlu_en(tokenizer, n_prompts, seed, cache_dir)
         elif part == "wikitext":
             out += build_prompts_wikitext(tokenizer, n_prompts, seed, cache_dir)
+        elif part == "code":
+            out += build_prompts_code(tokenizer, n_prompts, seed, cache_dir)
         elif part == "wikitext_nat":
             out += build_prompts_wikitext_natural(tokenizer, n_prompts, seed, cache_dir)
         else:                                     # pragma: no cover - registro errado
