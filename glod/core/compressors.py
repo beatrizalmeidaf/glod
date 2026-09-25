@@ -155,7 +155,28 @@ def c4_calibration(tokenizer, n_seq: int = 128, seq_len: int = 512, seed: int = 
     return batch
 
 
-CALIBRATION = {"wikitext": wikitext_calibration, "c4": c4_calibration}
+def code_calibration(tokenizer, n_seq: int = 128, seq_len: int = 512, seed: int = 0,
+                     cache_dir: Optional[str] = None) -> torch.Tensor:
+    """Como c4_calibration, mas de arquivos Python do codeparrot-clean-valid (GitHub),
+    disjunto das tarefas do MBPP usadas no corpus de codigo."""
+    from datasets import load_dataset
+    ds = load_dataset("codeparrot/codeparrot-clean-valid", split="train", streaming=True, cache_dir=cache_dir)
+    g = torch.Generator().manual_seed(seed)
+    rows = []
+    for r in ds.shuffle(seed=seed, buffer_size=2000):
+        ids = tokenizer(r["content"], return_tensors="pt", add_special_tokens=False).input_ids[0]
+        if len(ids) > seq_len:
+            s = int(torch.randint(0, len(ids) - seq_len, (1,), generator=g))
+            rows.append(ids[s:s + seq_len])
+        if len(rows) == n_seq:
+            break
+    batch = torch.stack(rows)
+    if tokenizer.bos_token_id is not None:
+        batch = torch.cat([torch.full((n_seq, 1), tokenizer.bos_token_id), batch[:, :-1]], dim=1)
+    return batch
+
+
+CALIBRATION = {"wikitext": wikitext_calibration, "c4": c4_calibration, "code": code_calibration}
 
 
 class LayerStats:
@@ -286,12 +307,18 @@ def _hinv_upper(H: torch.Tensor, W: torch.Tensor, percdamp: float) -> torch.Tens
 
 @torch.no_grad()
 def gptq(W: torch.Tensor, H: torch.Tensor, bits: int, group: int = 128, blocksize: int = 128,
-         percdamp: float = 0.01) -> torch.Tensor:
+         percdamp: float = 0.01, return_params: bool = False):
+    """GPTQ por grupo. Com `return_params`, devolve tambem os codigos inteiros e as
+    escalas/zeros por grupo, tais que Q == scale * (codes - zero) (usado pelo AMQ)."""
     W = W.clone().float()
     cols = W.shape[1]
     maxq = 2 ** bits - 1
     Hinv = _hinv_upper(H, W, percdamp)
     Q = torch.zeros_like(W)
+    codes = torch.zeros(W.shape, dtype=torch.uint8, device=W.device) if return_params else None
+    n_groups = (cols + group - 1) // group
+    scales = torch.zeros(W.shape[0], n_groups, device=W.device) if return_params else None
+    zeros = torch.zeros(W.shape[0], n_groups, device=W.device) if return_params else None
     scale = zero = None
     for i1 in range(0, cols, blocksize):
         i2 = min(i1 + blocksize, cols)
@@ -302,15 +329,22 @@ def gptq(W: torch.Tensor, H: torch.Tensor, bits: int, group: int = 128, blocksiz
         for i in range(i2 - i1):
             if (i1 + i) % group == 0:
                 scale, zero = _quant_params(W[:, i1 + i:i1 + i + group], maxq)
+                if return_params:
+                    scales[:, (i1 + i) // group] = scale.squeeze(1)
+                    zeros[:, (i1 + i) // group] = zero.squeeze(1)
             w = W1[:, i]
             d = Hinv1[i, i]
             q = _qdq(w.unsqueeze(1), scale, zero, maxq).flatten()
+            if return_params:
+                codes[:, i1 + i] = torch.clamp(torch.round(w / scale.squeeze(1)) + zero.squeeze(1), 0, maxq).to(torch.uint8)
             Q1[:, i] = q
             err = (w - q) / d
             W1[:, i:] -= err.unsqueeze(1).matmul(Hinv1[i, i:].unsqueeze(0))
             Err1[:, i] = err
         Q[:, i1:i2] = Q1
         W[:, i2:] -= Err1.matmul(Hinv[i1:i2, i2:])
+    if return_params:
+        return Q, codes, scales, zeros
     return Q
 
 
