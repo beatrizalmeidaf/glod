@@ -101,12 +101,12 @@ Divergences and flip counts therefore screen decision fidelity; they **do not** 
 
 ### What to report when evaluating a compressed model
 
-`python -m glod report --dense <model> --compressed cfg:gptq4 --out report/` writes items 1–3 below (TV, flips and KL per corpus, flips/TV, κ, J, and speculative-acceptance estimates) as JSON and Markdown, for any grid configuration or any checkpoint that shares the tokenizer.
+`python -m glod report --dense <model> --compressed cfg:gptq4 --out report/` writes the three items below (TV, flips and KL per corpus, flips/TV, κ, J, and speculative-acceptance estimates) as JSON and Markdown, for any grid configuration or any checkpoint that shares the tokenizer, and flags a flips/TV outside the central 95% of the published configurations (0.89–1.29).
 
 1. Report **total variation next to KL, per corpus** — TV converts into flips at a ratio near one; KL's conversion moves with the corpus.
 2. Compare KL values **only within one corpus and one reference model**.
 3. When the consumer needs exact agreement (speculative drafts, cached outputs, regression tests), report the **flip rate** itself, and screen drafts by TV on task prompts.
-4. When comparing accuracy at matched divergence, report **lost and repaired answers separately**, next to Gaussian noise of the same divergence over several seeds — a net gain inside that range is not evidence of repair.
+Flips and divergences describe fidelity to the dense model, not task accuracy: at matched divergence, accuracy can differ by tens of points.
 
 ### Can a compressor exploit the flip directions? (negative result)
 
