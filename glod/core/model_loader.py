@@ -147,6 +147,7 @@ def load_model(
     cache_dir: Optional[str] = DEFAULT_CACHE_DIR,
     token: Optional[str] = None,
     revision: Optional[str] = None,
+    quantization_config=None,
 ) -> LoadedModel:
     """Carrega um checkpoint inteiro numa unica GPU, em modo inferencia.
 
@@ -188,13 +189,17 @@ def load_model(
         token=hf_token,
         low_cpu_mem_usage=True,
         revision=revision,
+        # quantizacao com kernel real (bitsandbytes, FP8): o modelo ja nasce na placa,
+        # porque modelos bnb nao aceitam .to(device)
         **({"device_map": "auto"} if shard else {}),
+        **({"quantization_config": quantization_config, "device_map": {"": str(torch_device)}}
+           if quantization_config is not None and not shard else {}),
     )
     if shard:
         # com o modelo repartido, a entrada vai para a placa da primeira camada e o
         # accelerate move os estados entre as placas
         torch_device = next(model.parameters()).device
-    else:
+    elif quantization_config is None:
         model.to(torch_device)
     model.eval()
     model.requires_grad_(False)
