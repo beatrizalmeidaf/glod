@@ -35,3 +35,6 @@ web/
 _stamps/
 
 
+
+# saida dos scripts de fundo (scripts/bg)
+logs.txt
