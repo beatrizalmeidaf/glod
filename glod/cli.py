@@ -37,6 +37,13 @@ STAGES: dict[str, str] = {
     "fungibility": "glod.pipelines.fidelity.fungibility",
     "kl-greedy": "glod.pipelines.fidelity.kl_greedy",
     "mcq-permutation": "glod.pipelines.fidelity.mcq_permutation",
+    # extensoes de escopo (substancia e impacto): nada entra no numbers.json do paper
+    "exponent-budget": "glod.pipelines.fidelity.exponent_budget",
+    "tv-bound": "glod.pipelines.fidelity.tv_bound",
+    "kl-reversals": "glod.pipelines.fidelity.kl_reversals",
+    "wild-check": "glod.pipelines.fidelity.wild_check",
+    "moe-routing": "glod.pipelines.fidelity.moe_routing",
+    "ext-report": "glod.pipelines.fidelity.ext_report",
     # ataque adversarial (Secao 4)
     "adv-single": "glod.pipelines.adversarial.single_layer",
     "adv-multi": "glod.pipelines.adversarial.multi_layer",
@@ -53,6 +60,7 @@ STAGES: dict[str, str] = {
     "amq-eval": "glod.pipelines.compress.amq_eval",
     "spec-bench": "glod.pipelines.speculative.bench",
     "spec-law": "glod.pipelines.speculative.law",
+    "draft-select": "glod.pipelines.speculative.draft_select",
     # adaptatividade por token (Secao 7)
     "adaptive-alpha": "glod.pipelines.adaptive.alpha",
     "adaptive-bits": "glod.pipelines.adaptive.bits",
