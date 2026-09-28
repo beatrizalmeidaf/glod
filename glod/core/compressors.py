@@ -44,14 +44,32 @@ class Target:
     original: torch.Tensor  # copia bf16 em CPU
 
 
-class WeightBank:
-    """Todas as `nn.Linear` dentro das camadas do decoder, com copia original."""
+#: roteador de um bloco MoE (Qwen3-MoE, OLMoE, Mixtral: `mlp.gate`/`block_sparse_moe.gate`).
+#: Nenhum modelo denso do estudo tem uma Linear com esse nome exato (os densos usam
+#: `gate_proj`/`gate_up_proj`), entao a exclusao nao muda nenhum resultado publicado.
+ROUTER_RE = re.compile(r"\.(?:mlp|block_sparse_moe)\.gate$|\.router$")
 
-    def __init__(self, decoder: nn.Module) -> None:
+
+class WeightBank:
+    """Todas as `nn.Linear` dentro das camadas do decoder, com copia original.
+
+    O roteador de blocos MoE fica FORA por padrao, como nos quantizadores usados na
+    pratica; `quant_router=True` (ou GLOD_QUANT_ROUTER=1) o inclui.
+    """
+
+    def __init__(self, decoder: nn.Module, quant_router: Optional[bool] = None) -> None:
+        import os
+        if quant_router is None:
+            quant_router = os.environ.get("GLOD_QUANT_ROUTER", "0") == "1"
         self.decoder = decoder
         self.targets: list[Target] = []
+        self.routers: list[str] = []
         for name, module in decoder.named_modules():
             m = re.search(r"layers\.(\d+)\.", name + ".")
+            if isinstance(module, nn.Linear) and ROUTER_RE.search(name):
+                self.routers.append(name)
+                if not quant_router:
+                    continue
             if isinstance(module, nn.Linear) and m and name.startswith("layers."):
                 self.targets.append(Target(name, int(m.group(1)), module,
                                            module.weight.detach().to("cpu", copy=True)))
@@ -90,6 +108,17 @@ def rtn(w: torch.Tensor, bits: int, group: int = 128) -> torch.Tensor:
     """Afim assimetrica por grupo ao longo da entrada (igual a glod.quantize)."""
     from glod.core.quantize import quantize_dequantize
     return quantize_dequantize(w, bits, group)
+
+
+def rtn_q40(w: torch.Tensor, group: int = 32) -> torch.Tensor:
+    """Formato Q4_0 do llama.cpp: simetrico, grupo 32, d = (valor de maior |w|) / -8,
+    q = clamp(round(w/d), -8, 7). E o formato alvo dos checkpoints QAT do Gemma 3."""
+    flat = w.float().reshape(-1, group)
+    idx = flat.abs().argmax(-1, keepdim=True)
+    d = flat.gather(-1, idx) / -8
+    d = torch.where(d == 0, torch.ones_like(d), d)
+    q = torch.clamp(torch.round(flat / d), -8, 7)
+    return (q * d).reshape(w.shape)
 
 
 def gaussian_like_rtn(w: torch.Tensor, bits: int, gen: torch.Generator, group: int = 128) -> torch.Tensor:
@@ -207,6 +236,8 @@ class LayerStats:
                 self._alive.append(inputs[0])
             x = x.reshape(-1, x.shape[-1]).float()
             n = x.shape[0]
+            if n == 0:
+                return
             self.count[key] = self.count.get(key, 0) + n
             if self.need_hessian:
                 if key not in self.H:
@@ -236,6 +267,8 @@ class LayerStats:
         """Linear agrupadas pela mesma entrada (q/k/v; gate/up) - o grupo do AWQ."""
         by: dict[int, list[Target]] = {}
         for t in self.targets:
+            if not self.count.get(t.name):
+                continue            # expert MoE sem token: fica para o fallback
             by.setdefault(self.input_key[t.name], []).append(t)
         self._alive.clear()
         return list(by.values())
@@ -433,6 +466,21 @@ def calibrated_compress(model: nn.Module, bank: WeightBank, layers: nn.ModuleLis
                            n_samples=2048 if method == "awq" else 0)
         with stats:
             run_until_layer(model, layers, idx, calib, device, batch_size)
+        # experts MoE que nao receberam nenhum token de calibracao nao tem estatistica:
+        # recebem o operador nao calibrado do mesmo formato (RTN / magnitude)
+        unseen = [t for t in targets if not stats.count.get(t.name)]
+        for t in unseen:
+            W = t.module.weight.float()
+            if method in ("gptq", "awq"):
+                new = rtn(W, bits, group)
+            elif prunem:
+                new = W        # N:M sem estatistica: mantem denso e conta no fallback
+            else:
+                new = magnitude_prune(W, sparsity)
+            t.module.weight.copy_(new.to(t.module.weight.dtype))
+        info["fallback"] = info.get("fallback", 0) + len(unseen)
+        info["n_targets"] = info.get("n_targets", 0) + len(targets)
+        seen = {t.name for t in targets} - {t.name for t in unseen}
         if method == "awq":
             for grp in stats.groups():
                 key = grp[0].name
@@ -444,6 +492,8 @@ def calibrated_compress(model: nn.Module, bank: WeightBank, layers: nn.ModuleLis
                     t.module.weight.copy_(w.to(t.module.weight.dtype))
         else:
             for t in targets:
+                if t.name not in seen:
+                    continue
                 W = t.module.weight.float()
                 if method == "gptq":
                     new = gptq(W, stats.H[t.name] / stats.count[t.name] * 2, bits, group)
