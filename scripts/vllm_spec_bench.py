@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -69,8 +70,13 @@ def main() -> int:
     if args.child:
         print("RESULT " + json.dumps(run_one(args)), flush=True)
         return 0
-    results = {}
+    # retomada: drafts ja medidos no --out nao rodam de novo (o "none" de referencia e mantido)
+    results = json.load(open(args.out)) if args.out and os.path.exists(args.out) else {}
+    failed = []
     for name, path in [("none", None)] + [tuple(d.split("=", 1)) for d in args.drafts]:
+        if name in results:
+            print(f"{name}: ja medido, pulando", flush=True)
+            continue
         cmd = [sys.executable, __file__, "--child", "--target", args.target, "--prompts", args.prompts,
                "--k", str(args.k), "--max-tokens", str(args.max_tokens), "--max-model-len", str(args.max_model_len),
                "--mem", str(args.mem)] + (["--draft", path] if path else [])
@@ -78,7 +84,11 @@ def main() -> int:
         line = next((ln for ln in proc.stdout.splitlines() if ln.startswith("RESULT ")), None)
         if line is None:
             print(proc.stderr[-3000:], file=sys.stderr)
-            raise SystemExit(f"falhou: {name}")
+            if name == "none":
+                raise SystemExit("falhou: none (sem a referencia nao ha speedup)")
+            print(f"falhou: {name} (segue para o proximo draft)", flush=True)
+            failed.append(name)
+            continue
         results[name] = json.loads(line[7:])
         base = results["none"]
         for mode in ("greedy", "sample"):
@@ -88,7 +98,9 @@ def main() -> int:
                      for m in ("greedy", "sample")}, flush=True)
         if args.out:
             json.dump(results, open(args.out, "w"), indent=1)
-    return 0
+    if failed:
+        print(f"drafts que falharam: {failed}", flush=True)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
