@@ -10,7 +10,8 @@ escreve report.json e report.md com, por corpus:
   aceitacao especulativa estimada: greedy ~ 1 - flips, amostragem ~ 1 - TV, e tokens
   por rodada para k rascunhos (rodadas independentes; superestima ~2 pontos),
 
-mais o protocolo de reporte de 4 pontos do paper, marcando o que o relatorio cobre.
+mais o protocolo de reporte de 3 pontos do paper, e um aviso quando flips/TV sai do intervalo
+central de 95% das 802 configuracoes publicadas ([0,89; 1,29]).
 
 O comprimido pode ser:
   --compressed cfg:<nome>     qualquer configuracao da gramatica do grid (u4, gptq4, awq4,
@@ -45,9 +46,9 @@ PROTOCOL = [
     ("tv_per_corpus", "Report total variation next to KL, per corpus."),
     ("kl_within_corpus", "Compare KL values only within one corpus and one reference model."),
     ("flip_rate", "When the consumer needs exact agreement, report the flip rate itself; screen drafts by TV on task prompts."),
-    ("matched_accuracy", "When comparing accuracy at matched divergence, report lost and repaired answers separately, "
-                         "next to Gaussian noise of the same divergence over several seeds."),
 ]
+#: central 95% of flips/TV over the 802 published configurations (paper, Sec. 5)
+TV_RATIO_RANGE = (0.89, 1.29)
 
 
 def summarize(ref: dict, res: dict, k_draft: int) -> dict:
@@ -86,11 +87,16 @@ def markdown(rep: dict) -> str:
     if rep.get("kl_rank_warning"):
         L += [f"> **KL and TV rank the corpora differently here** ({rep['kl_rank_warning']}). "
               "Compare KL values only within a corpus.", ""]
+    odd = [c for c, s in rep["corpora"].items()
+           if not TV_RATIO_RANGE[0] <= s.get("flips_over_tv", 1.0) <= TV_RATIO_RANGE[1]]
+    if odd:
+        L += [f"> **flips/TV outside {TV_RATIO_RANGE[0]}--{TV_RATIO_RANGE[1]}** on {', '.join(odd)}: outside the "
+              "central 95% of the published configurations; check the pair before reading TV as a flip rate.", ""]
     L += ["## Reporting protocol", ""]
     for key, text in PROTOCOL:
         mark = "x" if rep["protocol"][key] else " "
         L.append(f"- [{mark}] {text}")
-    L += ["", "Item 4 needs task accuracy, which this report does not compute."]
+    L += ["", "Flips and divergences describe fidelity to the dense model, not task accuracy."]
     return "\n".join(L) + "\n"
 
 
@@ -154,7 +160,7 @@ def main(argv=None) -> int:
     rep = {"dense": args.dense, "compressed": args.compressed, "n_prompts": args.n_prompts,
            "max_new_tokens": args.max_new_tokens, "k_draft": args.k_draft, "corpora": results,
            "kl_rank_warning": None if order_kl == order_tv else f"KL: {' < '.join(order_kl)}; TV: {' < '.join(order_tv)}",
-           "protocol": {"tv_per_corpus": True, "kl_within_corpus": True, "flip_rate": True, "matched_accuracy": False}}
+           "protocol": {"tv_per_corpus": True, "kl_within_corpus": True, "flip_rate": True}}
     (out / "report.json").write_text(json.dumps(rep, indent=1))
     (out / "report.md").write_text(markdown(rep))
     LOGGER.info("relatorio em %s", out)
