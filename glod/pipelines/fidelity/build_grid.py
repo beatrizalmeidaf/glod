@@ -9,6 +9,7 @@ Gramatica de configuracoes:
   bf16                 referencia (so no proprio modelo de referencia)
   raw                  modelo sem perturbacao contra OUTRA referencia (--ref-model)
   uB  gB  sNgB         RTN g128 / ruido gaussiano de mesma variancia (seed N)
+  q40                  formato Q4_0 do llama.cpp (simetrico, g32): o alvo dos checkpoints QAT
   magP                 poda por magnitude P% por linha
   skipA_B              remove camadas
   lqB_L                so a camada L em RTN B bits
@@ -89,6 +90,8 @@ def apply_config(name: str, loaded, bank: C.WeightBank, ctrl, calib_fn, args):
         pass
     elif m := re.fullmatch(r"u(\d+)", name):
         b = int(m.group(1)); bank.map(lambda w, t: C.rtn(w, b))
+    elif name == "q40":
+        bank.map(lambda w, t: C.rtn_q40(w))
     elif m := re.fullmatch(r"(?:s(\d+))?g(\d+)", name):
         gen = torch.Generator(device=loaded.device).manual_seed(int(m.group(1) or 0))
         b = int(m.group(2)); bank.map(lambda w, t: C.gaussian_like_rtn(w, b, gen))
@@ -121,6 +124,19 @@ def apply_config(name: str, loaded, bank: C.WeightBank, ctrl, calib_fn, args):
             yield meta
     finally:
         bank.restore()
+
+
+def quant_config(name: str):
+    """Quantizacao com kernel real, carregada pelo transformers (nao simulada)."""
+    from transformers import BitsAndBytesConfig, FineGrainedFP8Config
+    if name == "nf4":
+        return BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                  bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=False)
+    if name == "int8":
+        return BitsAndBytesConfig(load_in_8bit=True)
+    if name == "fp8":
+        return FineGrainedFP8Config()
+    raise ValueError(name)
 
 
 def use_fp32_logits(model) -> None:
@@ -157,10 +173,23 @@ def stage_score(args) -> None:
     if not todo:
         LOGGER.info("nada a fazer em %s", out_dir)
         return
+    qcfg = None
+    if args.load_in:
+        # checkpoint com kernel real: uma unica config, com o nome do formato, contra a referencia
+        if todo != [args.load_in]:
+            raise SystemExit(f"--load-in {args.load_in} aceita so --configs {args.load_in}")
+        qcfg = quant_config(args.load_in)
     loaded = load_model(args.model, role="cfg", device=args.device, dtype="bfloat16",
-                        cache_dir=args.cache_dir, revision=args.revision)
+                        cache_dir=args.cache_dir, revision=args.revision, quantization_config=qcfg)
     if args.logits_fp32:
         use_fp32_logits(loaded.model)
+    if qcfg is not None:
+        with torch.inference_mode():
+            res = score_fidelity(loaded, corpus, ref=torch.load(OUT / rs / rs / "bf16.pt"),
+                                 batch_size=args.batch_size, subset=subset_index(corpus.n_tokens, args.subset))
+        res["meta"] = {"config": args.load_in, "model": args.model, "ref": rs, "kernel": "real"}
+        torch.save(res, out_dir / f"{args.load_in}.pt")
+        return
     bank = C.WeightBank(loaded.decoder)
     ctrl = make_elastic_depth(loaded.model)
     ref_file = OUT / rs / rs / "bf16.pt"
@@ -225,6 +254,8 @@ def main(argv=None) -> int:
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out", default=str(OUT))
     p.add_argument("--logits-fp32", action="store_true", help="lm_head em float32 (sem grade/empates do bf16)")
+    p.add_argument("--load-in", choices=["nf4", "int8", "fp8"], default=None,
+                   help="carrega o modelo quantizado com kernel real (bitsandbytes / FP8) e pontua so essa config")
     add_corpus_arg(p)
     p.add_argument("--max-degenerate", type=float, default=0.10,
                    help="fracao maxima de sequencias em laco (>50%% de 4-gramas repetidos) aceita no gen")
