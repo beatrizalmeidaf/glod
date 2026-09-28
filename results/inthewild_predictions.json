@@ -1,0 +1,76 @@
+{
+ "code_commit": "b23d21b747f431fa1ada87ed33802f67f4f2b226",
+ "configs_real_kernel": [
+  "nf4",
+  "int8",
+  "fp8"
+ ],
+ "configs_released_weights": [
+  "ofc@Qwen/Qwen2.5-14B-Instruct-AWQ",
+  "ofc@Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4",
+  "ofc@Qwen/Qwen2.5-14B-Instruct-GPTQ-Int8"
+ ],
+ "configs_simulated": [
+  "u8",
+  "u6",
+  "u5",
+  "u4",
+  "kv4",
+  "kv3",
+  "mag20",
+  "g4",
+  "gptq4",
+  "awq4",
+  "sgpt50",
+  "wanda50"
+ ],
+ "corpora": [
+  "gsm8k",
+  "mmlu_en",
+  "wikitext_nat",
+  "code"
+ ],
+ "criteria": {
+  "W1": {
+   "applies_to": "each reference with >= 8 configs",
+   "pass_if": "within the published range [0.459, 0.578]",
+   "what": "per-reference exponent of log flips on log KL (configs with 1e-3 < KL < 2, simulated configs only)"
+  },
+  "W2": {
+   "pass_if": "within [0.99, 1.25], the 5th-95th percentile band of the 54 published per-reference medians",
+   "what": "per-reference median flips/TV over simulated configs"
+  },
+  "W3": {
+   "pass_if": ">= 90% of configurations within [0.89, 1.29], the central 95% of the 802 published configurations",
+   "what": "per-configuration flips/TV, simulated configs"
+  },
+  "W4": {
+   "pass_if": "every one within [0.89, 1.29]",
+   "what": "flips/TV of each real-kernel (nf4, int8, fp8) and released-weight checkpoint"
+  },
+  "W5": {
+   "pass_if": "for every model, the median absolute relative error of the TV route is below that of the KL route, and the TV route's median error is at most 10%",
+   "routes": {
+    "KL": "flips_B = median_A(flips/sqrt(KL)) * sqrt(KL_B)",
+    "TV": "flips_B = median_A(flips/TV) * TV_B"
+   },
+   "what": "cross-corpus transfer within a model: predict corpus B's per-config flips from corpus A, for every ordered pair (A, B) of corpora"
+  }
+ },
+ "exclusions": [
+  "a run whose KL or TV is not finite is reported as a kernel failure and excluded from W1-W5",
+  "released-weight checkpoints are dequantized into bf16 (published weights, simulated kernel); nf4/int8/fp8 run the real kernels",
+  "a model that cannot be loaded is reported and dropped; the criteria stay unchanged for the others"
+ ],
+ "models": [
+  "Qwen/Qwen2.5-14B-Instruct",
+  "mistralai/Mistral-Nemo-Instruct-2407",
+  "ibm-granite/granite-3.3-8b-instruct"
+ ],
+ "models_note": "none is among the 19 models of the main study (Qwen2.5 7B and 72B are; 14B is not)",
+ "registered_at": "2026-09-28T03:06:27.791465+00:00",
+ "registered_before": "any reference corpus or score of the models below was generated",
+ "scoring": "teacher forcing on the dense model's greedy references, fp32 output head, top-64 plus tail, as in the main study",
+ "sha256_of_body": "52b50064a180c260c88261df8504570ac6cf1db4e50b29c02e9783dd522f1e5b",
+ "title": "In-the-wild test: new models, released checkpoints and real kernels"
+}
