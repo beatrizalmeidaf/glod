@@ -145,7 +145,68 @@ def main(argv=None) -> int:
             torch.cuda.empty_cache()
     _summaries(results)
     (out_dir / "results.json").write_text(json.dumps(results, indent=1))
+
+    # Generate and save the plot
+    try:
+        plot_path = out_dir / "benchmark_final_real.png"
+        _plot_results(results, plot_path)
+        LOGGER.info("Grafico gerado com sucesso em: %s", plot_path)
+        import shutil
+        from glod.paths import OUT
+        root_dir = OUT.parent
+        web_img = root_dir / "web" / "benchmark_final_real.png"
+        if (root_dir / "web").exists():
+            shutil.copy(plot_path, web_img)
+            LOGGER.info("Imagem copiada para %s", web_img)
+    except Exception as e:
+        LOGGER.error("Erro ao gerar grafico: %s", e)
+
     return 0
+
+
+def _plot_results(results, out_path):
+    import matplotlib.pyplot as plt
+    drafts = [k for k, v in results.get("drafts", {}).items() if "skipped" not in v]
+    if not drafts:
+        return
+    
+    greedy_speedup = [results["drafts"][d]["greedy"]["speedup_wallclock"] for d in drafts]
+    sample_speedup = [results["drafts"][d]["sample"]["speedup_wallclock"] for d in drafts]
+
+    plt.style.use('dark_background')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor('#0a0a10')
+    ax.set_facecolor('#0a0a10')
+
+    x = np.arange(len(drafts))
+    width = 0.35
+
+    rects1 = ax.bar(x - width/2, greedy_speedup, width, label='Greedy Speedup', color='#00f0ff')
+    rects2 = ax.bar(x + width/2, sample_speedup, width, label='Sample Speedup', color='#7000ff')
+
+    ax.set_ylabel('Speedup (Wallclock)', color='#a0a0b0', fontsize=12)
+    ax.set_title(f'Speculative Decoding Speedup (Target: {results.get("target")})', color='white', fontsize=14, pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(drafts, color='white', rotation=45, ha='right')
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, label='Baseline (1.0x)')
+
+    ax.legend(facecolor='#15151a', edgecolor='#ffffff', framealpha=0.8)
+
+    for rects in [rects1, rects2]:
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate(f'{height:.2f}x',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', color='white', fontsize=10)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#333')
+    ax.spines['bottom'].set_color('#333')
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), transparent=False)
 
 
 def run_draft(spec, args, target, eos, prompts, base_tps, target_bytes, results, out_dir) -> None:
