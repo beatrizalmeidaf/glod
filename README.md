@@ -2,13 +2,9 @@
   
 <img src="results/graficos/logo.png" alt="GLOD Logo" width="200" />
 
-# GLOD (Geometric Law of Damage)
+# GLOD: Evaluating LLM Compression and Fidelity
 
-> **Note on "Damage"**: In the context of GLOD, "Damage" refers strictly to **distributional deviation** from the dense oracle (teacher-forcing decision flips), not a loss in semantic capability or downstream task accuracy.
-
-**GLOD** is the analytical framework and evaluation suite introduced in the paper: *How Divergence Becomes Decision Flips in Compressed Language Models*.
-
-While the paper describes the theoretical discovery, the **GLOD** package provides the empirical infrastructure to measure how the margin geometry of an LLM converts statistical perturbations (such as compression) into decision changes ("damage").
+**GLOD (Geometric Law of Damage)** is an analytical framework and evaluation suite to measure the exact impact ("damage") of quantization and pruning on Large Language Models. Up to 31x faster than traditional generation-based benchmarks.
 
 [![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![build](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
@@ -19,7 +15,57 @@ While the paper describes the theoretical discovery, the **GLOD** package provid
 
 ---
 
+## Why use GLOD?
+
+- **31x Faster Evaluation:** Replace heavy generation with closed-form Total Variation formula.
+- **Universal LLM Compression Benchmark:** Evaluate Post-Training Quantization (AWQ, GPTQ, RTN) and Pruning (Wanda, SparseGPT).
+- **Precise Fidelity Measurement:** Understand exactly how compression changes decisions, separate from basic accuracy loss.
+- **Predict Speculative Acceptance:** Accurately estimate speculative decoding acceptance rates.
+
+---
+
+## Quick Start
+
+We created two practical tools so the community can validate geometric predictions without running heavy GPU simulations:
+
+### 1. Web Simulator (Landing Page)
+The interactive simulator lives on the [`site-review` branch](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/site-review) (`index.html`, `index-pt.html`): pick a model, corpus and compressor, and it compares the paper's two predictions, κ·√KL and total variation, with the closest real measurement.
+
+### 2. Test the law against real measurements, without a GPU
+
+The file [`data/measurements.csv`](data/measurements.csv) contains the **802 measured configurations** from the paper — model, corpus, family, configuration, KL, flips and TV. The script below uses only the Python standard library and **simulates nothing**: it compares the prediction against what was actually observed.
+
+```bash
+# predicted vs measured, configuration by configuration, on one reference
+$ python3 scripts/test_formula.py --model gemma-3-4b-it --corpus gsm8k
+
+measured kappa (Eq. 4, window 0.001 < KL < 0.05) : 0.1299
+fitted exponent in log-log                       : 0.5179  (R2 0.9960)
+
+config       family               KL  measured flips predicted      error
+----------------------------------------------------------------------
+u8           rtn             0.00067       0.00361    0.00336   -6.8%
+kv4          kv              0.01043       0.01327    0.01327   +0.0%
+u5           rtn             0.01835       0.01740    0.01760   +1.1%
+mag20        magnitude       0.04413       0.02839    0.02729   -3.9%
+...
+median absolute error inside the kappa window     : 1.1%
+```
+
+```bash
+$ python3 scripts/test_formula.py --families   # the central question, at matched KL
+$ python3 scripts/test_formula.py --list       # the 54 available references
+$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # just the prediction
+```
+
+The `--families` mode reproduces the in-sample family deviations behind the paper's family table (clustered by reference; the paper additionally refits each curve without the family and clusters by model) using solely the public CSV, and [`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) locks this agreement in place.
+
+---
+
 ## What is the Geometric Law of Damage?
+
+> [!NOTE]
+> **Note on "Damage"**: In the context of GLOD, "Damage" refers strictly to **distributional deviation** from the dense oracle (teacher-forcing decision flips), not a loss in semantic capability or downstream task accuracy.
 
 Today we have dozens of techniques to compress LLM weights and accelerate inference (pruning, quantization, layer skipping, etc.). When we choose one of these methods, the big question is: **do they cause different types of "damage" to the model's decisions, or do they merely differ in the amount of damage?**
 
@@ -45,6 +91,20 @@ $$ \mathrm{KL} = \frac{1}{2} \delta^\top F \delta + O(\lVert\delta\rVert^3) $$
 <div align="center">
   <img src="results/graficos/regime_chart.png" alt="Where the square-root relation bends and breaks" width="700"/>
 </div>
+
+---
+
+## Research & Paper Findings
+
+### Benchmark: TV Formula vs Traditional Evaluation
+
+The TV formula replaces a full forward pass (generating logits for every token) with a single closed-form computation, delivering **up to 31× faster evaluation** while predicting flip rates with **< 1% error** on aggressively quantized models (4-bit RTN).
+
+<div align="center">
+  <img src="results/graficos/benchmark_tv_speed.png" alt="Benchmark: TV Formula is up to 31x faster than traditional evaluation with < 1% prediction error" width="700"/>
+</div>
+
+*Real RTN compression (8-bit and 4-bit) on Qwen1.5-0.5B evaluated across three MMLU domains. The TV formula runs in 0.01–0.02s vs 0.31–0.32s for traditional generation-based evaluation. At 4-bit quantization, TV predicts 99.2–99.6% flip rates against 100% measured — less than 1 percentage point of error.*
 
 ### How much the method family still matters, at matched KL
 
@@ -120,16 +180,6 @@ Greedy speculative decoding accepts a draft token exactly when it matches the ta
   <img src="results/graficos/speculative_chart.png" alt="Speculative decoding acceptance predicted from total variation" width="520"/>
 </div>
 
-### Benchmark: TV Formula vs Traditional Evaluation
-
-The TV formula replaces a full forward pass (generating logits for every token) with a single closed-form computation, delivering **up to 31× faster evaluation** while predicting flip rates with **< 1% error** on aggressively quantized models (4-bit RTN).
-
-<div align="center">
-  <img src="results/graficos/benchmark_tv_speed.png" alt="Benchmark: TV Formula is up to 31x faster than traditional evaluation with < 1% prediction error" width="700"/>
-</div>
-
-*Real RTN compression (8-bit and 4-bit) on Qwen1.5-0.5B evaluated across three MMLU domains. The TV formula runs in 0.01–0.02s vs 0.31–0.32s for traditional generation-based evaluation. At 4-bit quantization, TV predicts 99.2–99.6% flip rates against 100% measured — less than 1 percentage point of error.*
-
 ---
 
 ## Impact Metrics
@@ -138,44 +188,6 @@ The TV formula replaces a full forward pass (generating logits for every token) 
 | :---: | :---: | :---: | :---: |
 | **Model Scale** | **Configurations** | **Jensen share of κ** | **Repair is largely re-sampling** |
 | Up to Qwen2.5-72B | 19 models, 9 perturbation families, 5 corpora | of the variance of log κ comes from KL being averaged before the square root | of the dense model's wrong answers are fixed by any perturbation, noise included |
-
----
-
-## Quick Start
-
-We created two practical tools so the community can validate geometric predictions without running heavy GPU simulations:
-
-### 1. Web Simulator (Landing Page)
-The interactive simulator lives on the [`site-review` branch](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/site-review) (`index.html`, `index-pt.html`): pick a model, corpus and compressor, and it compares the paper's two predictions, κ·√KL and total variation, with the closest real measurement.
-
-### 2. Test the law against real measurements, without a GPU
-
-The file [`data/measurements.csv`](data/measurements.csv) contains the **802 measured configurations** from the paper — model, corpus, family, configuration, KL, flips and TV. The script below uses only the Python standard library and **simulates nothing**: it compares the prediction against what was actually observed.
-
-```bash
-# predicted vs measured, configuration by configuration, on one reference
-$ python3 scripts/test_formula.py --model gemma-3-4b-it --corpus gsm8k
-
-measured kappa (Eq. 4, window 0.001 < KL < 0.05) : 0.1299
-fitted exponent in log-log                       : 0.5179  (R2 0.9960)
-
-config       family               KL  measured flips predicted      error
-----------------------------------------------------------------------
-u8           rtn             0.00067       0.00361    0.00336   -6.8%
-kv4          kv              0.01043       0.01327    0.01327   +0.0%
-u5           rtn             0.01835       0.01740    0.01760   +1.1%
-mag20        magnitude       0.04413       0.02839    0.02729   -3.9%
-...
-median absolute error inside the kappa window     : 1.1%
-```
-
-```bash
-$ python3 scripts/test_formula.py --families   # the central question, at matched KL
-$ python3 scripts/test_formula.py --list       # the 54 available references
-$ python3 scripts/test_formula.py --kappa 0.35 --kl 0.10   # just the prediction
-```
-
-The `--families` mode reproduces the in-sample family deviations behind the paper's family table (clustered by reference; the paper additionally refits each curve without the family and clusters by model) using solely the public CSV, and [`tests/test_measurements_csv.py`](tests/test_measurements_csv.py) locks this agreement in place.
 
 ---
 
