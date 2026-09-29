@@ -120,6 +120,16 @@ Greedy speculative decoding accepts a draft token exactly when it matches the ta
   <img src="results/graficos/speculative_chart.png" alt="Speculative decoding acceptance predicted from total variation" width="520"/>
 </div>
 
+### Benchmark: TV Formula vs Traditional Evaluation
+
+The TV formula replaces a full forward pass (generating logits for every token) with a single closed-form computation, delivering **up to 31× faster evaluation** while predicting flip rates with **< 1% error** on aggressively quantized models (4-bit RTN).
+
+<div align="center">
+  <img src="results/graficos/benchmark_tv_speed.png" alt="Benchmark: TV Formula is up to 31x faster than traditional evaluation with < 1% prediction error" width="700"/>
+</div>
+
+*Real RTN compression (8-bit and 4-bit) on Qwen1.5-0.5B evaluated across three MMLU domains. The TV formula runs in 0.01–0.02s vs 0.31–0.32s for traditional generation-based evaluation. At 4-bit quantization, TV predicts 99.2–99.6% flip rates against 100% measured — less than 1 percentage point of error.*
+
 ---
 
 ## Impact Metrics
@@ -136,7 +146,7 @@ Greedy speculative decoding accepts a draft token exactly when it matches the ta
 We created two practical tools so the community can validate geometric predictions without running heavy GPU simulations:
 
 ### 1. Web Simulator (Landing Page)
-The interactive simulator lives on the [`gh-pages` branch](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/gh-pages) (`index.html`, `index-pt.html`): pick a model, corpus and compressor, and it compares the paper's two predictions, κ·√KL and total variation, with the closest real measurement.
+The interactive simulator lives on the [`site-review` branch](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/site-review) (`index.html`, `index-pt.html`): pick a model, corpus and compressor, and it compares the paper's two predictions, κ·√KL and total variation, with the closest real measurement.
 
 ### 2. Test the law against real measurements, without a GPU
 

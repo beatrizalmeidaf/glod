@@ -34,6 +34,8 @@ web/
 
 _stamps/
 
+.pytest_cache
+
 
 
 # saida dos scripts de fundo (scripts/bg)
