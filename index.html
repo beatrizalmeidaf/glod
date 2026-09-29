@@ -270,6 +270,10 @@
             <figcaption><b>Acceptance.</b> Measured greedy acceptance against the prediction from 1 − TV (i.i.d. rounds, no constant) for 23 compressed self-drafts and 20 cross-model drafts on GSM8K.</figcaption>
           </figure>
         </div>
+        <figure class="figure reveal" style="margin-top: clamp(2.5rem, 5vw, 4rem);">
+          <div class="plate"><img src="assets/paper/fig_speedup.png" alt="Left: bar chart of measured vLLM speedup for each draft on Qwen3-14B and Qwen3-8B, on GSM8K and code, up to 2.48 times. Right: predicted against measured acceptance; 1 minus TV lies on the identity line, the KL prediction falls below it on code." loading="lazy" width="1407" height="461"></div>
+          <figcaption><b>Measured speedup.</b> Speculative decoding in vLLM with real kernels (greedy, k = 4, 64 prompts per task, disjoint from the calibration text). (a) Wall-clock speedup of each draft over the target alone, up to 2.48×. Markers show the draft each statistic picks through a weight-byte cost model: the TV pick reaches 85–100% of the best measured speedup and the KL pick 93–100%. (b) Predicted against measured acceptance per proposed token: 1 − TV errs by 1.1–2.4%, κ·√KL by 2.5–5.1% on GSM8K and 18–22% on code.</figcaption>
+        </figure>
       </div>
     </section>
 

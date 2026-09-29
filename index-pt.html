@@ -270,6 +270,10 @@
             <figcaption><b>Aceitação.</b> Aceitação gulosa medida contra a previsão por 1 − TV (rodadas i.i.d., sem constante) em 23 self-drafts comprimidos e 20 drafts de outros modelos no GSM8K.</figcaption>
           </figure>
         </div>
+        <figure class="figure reveal" style="margin-top: clamp(2.5rem, 5vw, 4rem);">
+          <div class="plate"><img src="assets/paper/fig_speedup.png" alt="À esquerda, barras com o speedup medido no vLLM para cada draft do Qwen3-14B e do Qwen3-8B, em GSM8K e código, até 2,48 vezes. À direita, aceitação prevista contra a medida; 1 menos TV fica sobre a reta identidade, e a previsão pelo KL fica abaixo dela em código." loading="lazy" width="1407" height="461"></div>
+          <figcaption><b>Speedup medido.</b> Decodificação especulativa no vLLM com kernels reais (gulosa, k = 4, 64 prompts por tarefa, disjuntos do texto de calibração). (a) Speedup em tempo de relógio de cada draft sobre o alvo sozinho, até 2,48×. Os marcadores indicam o draft que cada estatística escolhe por um modelo de custo em bytes de peso: a escolha pela TV atinge 85–100% do melhor speedup medido, e a pelo KL, 93–100%. (b) Aceitação por token proposto, prevista contra medida: 1 − TV erra 1,1–2,4%, e κ·√KL erra 2,5–5,1% no GSM8K e 18–22% em código.</figcaption>
+        </figure>
       </div>
     </section>
 
