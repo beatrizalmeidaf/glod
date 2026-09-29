@@ -8,8 +8,9 @@ venv/
 .ruff_cache/
 .ipynb_checkpoints/
 
-# Data & Models
-data/
+# Data & Models (only the published measurements are versioned)
+data/*
+!data/measurements.csv
 *.pt
 *.safetensors
 
