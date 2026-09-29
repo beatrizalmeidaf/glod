@@ -7,9 +7,9 @@
 **GLOD (Geometric Law of Damage)** is an analytical framework and evaluation suite to measure the exact impact ("damage") of quantization and pruning on Large Language Models. Up to 31x faster than traditional generation-based benchmarks.
 
 [![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
-[![build](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![build](https://github.com/beatrizalmeidaf/glod/actions/workflows/test.yml/badge.svg)](https://github.com/beatrizalmeidaf/glod/actions/workflows/test.yml)
 [![paper](https://img.shields.io/badge/arxiv-Paper-red.svg)]()
-[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/gh-pages)
+[![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://github.com/beatrizalmeidaf/elastic_weight_streaming/tree/site-review)
 
 </div>
 
