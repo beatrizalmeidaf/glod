@@ -611,7 +611,7 @@
 
     <nav>
         <div class="nav-logo">
-            <img src="logo.png" alt="GLOD Logo">
+            <img src="assets/logo.png" alt="GLOD Logo">
             <span>GLOD</span>
         </div>
         <div class="nav-links">
@@ -681,12 +681,12 @@
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                 <h3 class="uc-title">Designers de Hardware</h3>
-                <p class="uc-desc">Projete novos formatos de ponto flutuante cientes do "teto intransponível" dos compressores estáticos demonstrado pela TV.</p>
+                <p class="uc-desc">Projete novos formatos de ponto flutuante cientes do "teto intransponível" dos compressores estáticos demonstrado pelo GLOD.</p>
             </div>
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                 <h3 class="uc-title">Speculative Decoding</h3>
-                <p class="uc-desc">Preveja a taxa de aceitação exata de modelos rascunho (self-drafts) sem escrever uma única linha de código. A TV rastreia a aceitação com 95.3% de precisão.</p>
+                <p class="uc-desc">Preveja a taxa de aceitação exata de modelos rascunho (self-drafts) sem escrever uma única linha de código. O GLOD rastreia a aceitação com 95.3% de precisão.</p>
             </div>
         </div>
     </section>
@@ -784,6 +784,32 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </section>
+
+    <!-- Benchmark de Velocidade Section -->
+    <section class="benchmark-section">
+        <span class="section-label">⚡ Performance</span>
+        <h2 class="section-title">Até 31× Mais Rápido que Avaliação Tradicional</h2>
+        <p class="section-desc">A fórmula TV substitui um forward pass completo (gerando logits para cada token) por um cálculo fechado instantâneo — com erro de previsão menor que 1% em quantização agressiva (4-bit RTN).</p>
+        
+        <div style="text-align: center; margin: 2rem 0;">
+            <img src="assets/benchmark_tv_speed.png" alt="Benchmark: Fórmula TV é até 31x mais rápida que avaliação tradicional" style="max-width: 100%; width: 700px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 800px; margin: 2rem auto 0;">
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #00f0ff;">31×</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Mais rápido que geração tradicional</div>
+            </div>
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #27c93f;">&lt;1%</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Erro de previsão (4-bit RTN)</div>
+            </div>
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #7000ff;">0.01s</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Tempo da fórmula TV</div>
+            </div>
         </div>
     </section>
 
@@ -1007,7 +1033,7 @@
             });
 
             const legendBox = document.getElementById('dynamic-legend');
-            legendBox.innerHTML = `<div class="legend-item"><div class="dot" style="background: var(--accent-cyan);"></div> Limite da TV</div>`;
+            legendBox.innerHTML = `<div class="legend-item"><div class="dot" style="background: var(--accent-cyan);"></div> Limite GLOD</div>`;
 
             for(let f in families) {
                 let color = familyColors[f] || '#aaaaaa';
@@ -1038,7 +1064,7 @@
             }
 
             datasets.unshift({
-                label: 'Limite Teórico da TV',
+                label: 'Limite Teórico GLOD',
                 data: theoryData,
                 type: 'line',
                 borderColor: '#00f0ff',

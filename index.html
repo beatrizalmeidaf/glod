@@ -611,7 +611,7 @@
 
     <nav>
         <div class="nav-logo">
-            <img src="logo.png" alt="GLOD Logo">
+            <img src="assets/logo.png" alt="GLOD Logo">
             <span>GLOD</span>
         </div>
         <div class="nav-links">
@@ -681,12 +681,12 @@
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                 <h3 class="uc-title">Hardware Designers</h3>
-                <p class="uc-desc">Design new floating-point formats aware of the "insurmountable ceiling" of static compressors demonstrated by TV.</p>
+                <p class="uc-desc">Design new floating-point formats aware of the "insurmountable ceiling" of static compressors demonstrated by GLOD.</p>
             </div>
             <div class="uc-card">
                 <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                 <h3 class="uc-title">Speculative Decoding</h3>
-                <p class="uc-desc">Predict the exact acceptance rate of compressed self-drafts without writing a single line of speculative execution code. TV tracks draft acceptance with 95.3% accuracy.</p>
+                <p class="uc-desc">Predict the exact acceptance rate of compressed self-drafts without writing a single line of speculative execution code. GLOD tracks draft acceptance with 95.3% accuracy.</p>
             </div>
         </div>
     </section>
@@ -786,9 +786,35 @@
             </table>
         </div>
         <div style="text-align: center; margin-top: 3rem;">
-            <img src="methods_chart.png" alt="Methods Chart" style="max-width: 100%; border-radius: 8px;">
+            <img src="assets/methods_chart.png" alt="Methods Chart" style="max-width: 100%; border-radius: 8px;">
         </div>
         
+    </section>
+
+    <!-- Benchmark Speed Section -->
+    <section class="benchmark-section">
+        <span class="section-label">⚡ Performance</span>
+        <h2 class="section-title">Up to 31× Faster than Traditional Evaluation</h2>
+        <p class="section-desc">The TV formula replaces a full forward pass (generating logits for every token) with an instant closed-form computation — with prediction error under 1% on aggressive quantization (4-bit RTN).</p>
+        
+        <div style="text-align: center; margin: 2rem 0;">
+            <img src="assets/benchmark_tv_speed.png" alt="Benchmark: TV Formula is up to 31x faster than traditional evaluation" style="max-width: 100%; width: 700px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 800px; margin: 2rem auto 0;">
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #00f0ff;">31×</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Faster than traditional generation</div>
+            </div>
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #27c93f;">&lt;1%</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Prediction error (4-bit RTN)</div>
+            </div>
+            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: #7000ff;">0.01s</div>
+                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">TV formula evaluation time</div>
+            </div>
+        </div>
     </section>
 
     <!-- Quick Start Section -->
@@ -829,10 +855,10 @@
         <h2 class="section-title">Insurmountable Ceiling & Speculative Decoding</h2>
         <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
             <div style="flex: 1; min-width: 400px; text-align: center;">
-                <img src="attacks_chart.png" alt="Attacks vs Honest Baseline" style="max-width: 100%; border-radius: 8px;">
+                <img src="assets/attacks_chart.png" alt="Attacks vs Honest Baseline" style="max-width: 100%; border-radius: 8px;">
             </div>
             <div style="flex: 1; min-width: 400px; text-align: center;">
-                <img src="speculative_chart.png" alt="Speculative Decoding" style="max-width: 100%; border-radius: 8px;">
+                <img src="assets/speculative_chart.png" alt="Speculative Decoding" style="max-width: 100%; border-radius: 8px;">
             </div>
         </div>
     </section>
@@ -1024,7 +1050,7 @@
             });
 
             const legendBox = document.getElementById('dynamic-legend');
-            legendBox.innerHTML = `<div class="legend-item"><div class="dot" style="background: var(--accent-cyan);"></div> TV Limit</div>`;
+            legendBox.innerHTML = `<div class="legend-item"><div class="dot" style="background: var(--accent-cyan);"></div> GLOD Limit</div>`;
 
             for(let f in families) {
                 let color = familyColors[f] || '#aaaaaa';
