@@ -1,1181 +1,523 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR" class="no-js">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLOD: Geometric Law of Damage</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-base: #050508;
-            --bg-surface: #0a0a10;
-            --bg-panel: rgba(15, 15, 25, 0.7);
-            
-            --accent-cyan: #00f0ff;
-            --accent-blue: #0055ff;
-            --accent-purple: #7000ff;
-            
-            --text-main: #f8f8f8;
-            --text-muted: #a0a0b0;
-            --border-color: rgba(255, 255, 255, 0.08);
-            
-            --glow-cyan: rgba(0, 240, 255, 0.15);
-            --glow-blue: rgba(0, 85, 255, 0.15);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 80px; 
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .bg-glow {
-            position: fixed;
-            top: -20%;
-            left: -10%;
-            width: 120vw;
-            height: 120vh;
-            background: 
-                radial-gradient(circle at 20% 40%, var(--glow-blue), transparent 40%),
-                radial-gradient(circle at 80% 60%, var(--glow-cyan), transparent 30%);
-            z-index: -1;
-            pointer-events: none;
-            opacity: 0.6;
-        }
-
-        nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 5%;
-            background: rgba(5, 5, 8, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            font-weight: 700;
-            font-size: 1.2rem;
-            letter-spacing: -0.5px;
-        }
-
-        .nav-logo img {
-            height: 62px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .nav-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-main);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
-            color: white;
-            padding: 0.5rem 1.2rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: none;
-            cursor: pointer;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px var(--glow-cyan);
-        }
-
-        .hero {
-            padding: 6rem 5% 4rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            align-items: center;
-        }
-
-        .hero-content h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            letter-spacing: -1px;
-            background: linear-gradient(to right, #fff, #a0a0b0);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-content p {
-            font-size: 1.1rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            max-width: 90%;
-        }
-
-        .terminal {
-            background: #0d0d12;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-        }
-
-        .terminal-header {
-            background: #15151a;
-            padding: 0.75rem 1rem;
-            display: flex;
-            gap: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .terminal-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ff5f56;
-        }
-        .terminal-dot:nth-child(2) { background: #ffbd2e; }
-        .terminal-dot:nth-child(3) { background: #27c93f; }
-
-        .terminal-body {
-            padding: 1.5rem;
-            color: #dcdcaa;
-            line-height: 1.6;
-        }
-
-        .term-prompt { color: var(--accent-cyan); font-weight: bold; }
-        .term-cmd { color: #fff; }
-        .term-sys { color: #8a8a9a; }
-        .term-success { color: #27c93f; }
-
-        .stats-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto 5rem;
-            padding: 0 5%;
-        }
-
-        .stat-card {
-            flex: 1;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-        
-        .stat-desc {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 0.25rem;
-        }
-
-        .tool-section {
-            max-width: 1200px;
-            margin: 0 auto 5rem;
-            padding: 2rem 5%;
-            background: var(--bg-surface);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .section-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .section-header h2 {
-            font-size: 2.2rem;
-            margin-bottom: 1rem;
-        }
-        
-        .section-header p {
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .calculator-grid {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2rem;
-        }
-
-        .panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .panel-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--text-main);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        select, input[type="range"], input[type="number"] {
-            width: 100%;
-            padding: 0.8rem;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-main);
-            font-family: inherit;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        select:focus, input[type="number"]:focus {
-            border-color: var(--accent-cyan);
-        }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .slider-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            min-width: 50px;
-        }
-
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            padding: 0;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: var(--accent-cyan);
-            cursor: pointer;
-            margin-top: -6px;
-            box-shadow: 0 0 10px var(--glow-cyan);
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: var(--border-color);
-            border-radius: 2px;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-        }
-
-        .legend-box {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        /* Results Box Styles */
-        #results-box {
-            display: none; 
-            margin-top: 1.5rem; 
-            padding: 1.2rem; 
-            background: rgba(0,240,255,0.05); 
-            border: 1px solid rgba(0,240,255,0.2); 
-            border-radius: 8px;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 960px) {
-            .hero {
-                grid-template-columns: 1fr;
-                text-align: center;
-                padding-top: 4rem;
-            }
-            .hero-content p {
-                margin: 0 auto 2rem;
-            }
-            .stats-row {
-                flex-direction: column;
-                gap: 2rem;
-            }
-            .calculator-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        /* New Sections Styles (Alibaba OCR style) */
-        .use-cases-section, .benchmark-section, .quick-start-section {
-            max-width: 1200px;
-            margin: 0 auto 5rem;
-            padding: 2rem 5%;
-        }
-        
-        .section-label {
-            color: var(--accent-primary);
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        
-        .section-title {
-            text-align: center;
-            font-size: 2.2rem;
-            margin-bottom: 1rem;
-            color: #fff;
-        }
-
-        .section-desc {
-            text-align: center;
-            color: #888;
-            max-width: 700px;
-            margin: 0 auto 3rem;
-            line-height: 1.6;
-        }
-
-        /* Use Cases Grid */
-        .use-cases-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-        }
-        @media (max-width: 768px) {
-            .use-cases-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .uc-card {
-            background: #050505;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 2.5rem 2rem;
-            transition: all 0.3s ease;
-        }
-        
-        .uc-card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-5px);
-        }
-
-        .uc-icon {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 1.5rem;
-            opacity: 0.9;
-        }
-
-        .uc-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 1rem;
-        }
-
-        .uc-desc {
-            color: #888;
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-
-        /* Benchmark Table */
-        .benchmark-wrapper {
-            background: #050505;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            overflow-x: auto;
-        }
-
-        .bm-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px;
-        }
-
-        .bm-table th {
-            background: #0a1f11;
-            color: var(--accent-primary);
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 1.2rem 1.5rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .bm-table td {
-            padding: 1.2rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            color: #ccc;
-            font-size: 0.95rem;
-        }
-
-        .bm-table tr:hover {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .bm-rank {
-            width: 50px;
-        }
-
-        .bm-model {
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .bm-highlight {
-            color: var(--accent-primary);
-            font-weight: 700;
-        }
-
-        .bm-sub {
-            display: block;
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 0.2rem;
-        }
-
-        /* Início Rápido */
-        .qs-container {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .qs-card {
-            background: #050505;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 2rem;
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        .qs-num {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            width: 40px;
-            height: 40px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .qs-content {
-            flex-grow: 1;
-        }
-
-        .qs-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 0.4rem;
-        }
-
-        .qs-desc {
-            color: #888;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-
-        .qs-terminal {
-            background: #0a0a0c;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #dcdcaa;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .qs-copy {
-            color: #666;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .qs-copy:hover {
-            color: #fff;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLOD · Divergência e Flips de Decisão</title>
+  <meta name="description" content="Em 802 cópias comprimidas e perturbadas de 19 modelos de linguagem abertos, a taxa de flips acompanha a variação total com razão mediana de 1,05, sem constante ajustada. O KL só se lê como decisões dentro de um mesmo corpus.">
+  <meta property="og:title" content="How Divergence Becomes Decision Flips in Compressed Language Models">
+  <meta property="og:description" content="A variação total se lê como decisões. O KL, não. 802 configurações, 19 modelos, 9 famílias de perturbação.">
+  <meta property="og:image" content="assets/paper/fig_teaser.png">
+  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#07080c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="alternate" hreflang="en" href="index.html">
+  <script>try{var t=localStorage.getItem("glod-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-    <div class="bg-glow"></div>
 
-    <nav>
-        <div class="nav-logo">
-            <img src="assets/logo.png" alt="GLOD Logo">
-            <span>GLOD</span>
-        </div>
-        <div class="nav-links">
-            <a href="#simulator">Simulador</a>
-            <a href="https://github.com/beatrizalmeidaf/elastic_weight_streaming/blob/main/README.md" target="_blank">Docs</a>
-            <a href="https://github.com/beatrizalmeidaf/elastic_weight_streaming" target="_blank">GitHub</a>
-            <div style="display:flex; gap:0.5rem; margin-left: 1rem;">
-                <a href="index.html">EN</a>
-                <span style="color: var(--text-muted);">|</span>
-                <a href="index-pt.html" style="color: var(--accent-cyan); font-weight: bold;">PT</a>
-            </div>
-        </div>
-        <div>
-            <a href="#simulator" class="btn-primary">Testar Calculadora</a>
-        </div>
-    </nav>
+  <div class="announce">
+    <span class="long">Página complementar do artigo <em>How Divergence Becomes Decision Flips in Compressed Language Models</em> (em revisão).</span> O código e as 802 medições estão publicados.
+    <a href="https://github.com/beatrizalmeidaf/elastic_weight_streaming" target="_blank" rel="noopener">Ver no GitHub →</a>
+  </div>
 
+  <nav class="nav" aria-label="Principal">
+    <div class="wrap nav-inner">
+      <a href="#top" class="nav-logo" aria-label="Início do GLOD"><img src="assets/logo.png" alt="GLOD" width="117" height="38"></a>
+      <div class="nav-links">
+        <a href="#findings">Resultados</a>
+        <a href="#mechanism">Mecanismo</a>
+        <a href="#out-of-sample">Fora da amostra</a>
+        <a href="#speculative">Decodificação especulativa</a>
+        <a href="#explorer">Explorador</a>
+        <a href="#reproduce">Reproduzir</a>
+      </div>
+      <div class="nav-right">
+        <div class="lang" role="group" aria-label="Idioma">
+          <a href="index.html" hreflang="en">EN</a>
+          <a href="index-pt.html" aria-current="page">PT</a>
+        </div>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Alternar modo escuro">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <a class="btn btn-dark btn-sm" href="https://github.com/beatrizalmeidaf/elastic_weight_streaming" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0C17.3 4.8 18.3 5.1 18.3 5.1c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+          GitHub
+        </a>
+        <button class="icon-btn menu-btn" id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+
+    <!-- Hero -->
     <header class="hero">
-        <div class="hero-content">
-            <h1>Variação Total é a Verdadeira Moeda da Compressão.</h1>
-            <p>O GLOD prova que a Variação Total prevê trocas de decisão de forma exata (1:1), e que a divergência KL precisa de uma constante ditada pela geometria do modelo para tentar acompanhá-la.</p>
-            <p style="font-size: 0.9rem; margin-top: 1rem; color: #888;"><strong>Nota sobre "Dano":</strong> GLOD mede desvio distribucional (flips), não capacidade semântica. A variação da conversão de KL entre corpora é explicada em 70% pela <strong>Desigualdade de Jensen</strong>—a Variação Total (TV) contorna isso naturalmente.</p>
-            
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                <code style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
-                    pip install -e .
-                </code>
-            </div>
+      <div class="wrap">
+        <span class="pill reveal"><b>802</b> cópias comprimidas · <b>19</b> modelos abertos · <b>9</b> famílias de perturbação</span>
+        <h1 class="reveal d1">A variação total se lê como <span class="serif grad-text">decisões.</span> O&nbsp;KL,&nbsp;não.</h1>
+        <p class="lede reveal d2">Relatórios de compressão resumem o quanto um modelo comprimido se afastou do denso, em geral pela divergência KL. Quem depende das saídas do modelo denso precisa saber outra coisa: quantas decisões mudaram. A taxa com que o token arg-max muda acompanha a variação total com razão mediana de 1,05, sem constante ajustada.</p>
+        <div class="hero-cta reveal d3">
+          <a class="btn btn-dark" href="#explorer">Explorar as medições
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#reproduce">Rodar no seu modelo</a>
         </div>
-        
-        <div class="terminal">
-            <div class="terminal-header">
-                <div class="terminal-dot"></div>
-                <div class="terminal-dot"></div>
-                <div class="terminal-dot"></div>
-            </div>
-            <div class="terminal-body">
-                <div><span class="term-prompt">$</span> <span class="term-cmd">python -m glod.cli grid --corpus mmlu_pt MODEL=Qwen/Qwen3-4B</span></div>
-                <div class="term-sys">[glod] Reviewing 4 families of compressors...</div>
-                <div class="term-success">[glod] ✔ Quantization (GPTQ, AWQ) (12s)</div>
-                <div class="term-success">[glod] ✔ Pruning (SparseGPT, Wanda) (15s)</div>
-                <div class="term-sys">[glod] Calculating geometry metrics...</div>
-                <div class="term-success">[glod] ✔ Done. κ = 0.352</div>
-                <br>
-                <div style="color: #fff">--- Model Geometry Law ---</div>
-                <div class="term-sys">Flips ≈ TV ≈ 0.352 * √KL</div>
-                <div class="term-sys">R² fitness across all techniques: <span style="color: #00f0ff">0.991</span></div>
-            </div>
-        </div>
+        <p class="paper-line reveal d3">Artigo: <cite>How Divergence Becomes Decision Flips in Compressed Language Models</cite> · em revisão</p>
+      </div>
     </header>
 
-    <!-- Use Cases Section -->
-    <section class="use-cases-section">
-        <span class="section-label">Use Cases</span>
-        <h2 class="section-title">Para quem é o GLOD?</h2>
-        <div class="use-cases-grid">
-            <div class="uc-card">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-                <h3 class="uc-title">Pesquisadores de IA</h3>
-                <p class="uc-desc">Compreenda os limites teóricos e a geometria fundamental da compressão de LLMs. Teste novos limites de optimalidade além de AWQ e GPTQ.</p>
-            </div>
-            <div class="uc-card">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                <h3 class="uc-title">Engenheiros de Otimização</h3>
-                <p class="uc-desc">Use a taxa de câmbio teórica para prever matematicamente o impacto de uma poda ou quantização sem a necessidade de rodar pipelines caros de inferência. <strong style="color: #ff5f56;">Aviso: TV mede fidelidade, não competência. Não substitui o ranqueamento empírico de acurácia zero-shot.</strong></p>
-            </div>
-            <div class="uc-card">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
-                <h3 class="uc-title">Designers de Hardware</h3>
-                <p class="uc-desc">Projete novos formatos de ponto flutuante cientes do "teto intransponível" dos compressores estáticos demonstrado pelo GLOD.</p>
-            </div>
-            <div class="uc-card">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                <h3 class="uc-title">Speculative Decoding</h3>
-                <p class="uc-desc">Preveja a taxa de aceitação exata de modelos rascunho (self-drafts) sem escrever uma única linha de código. O GLOD rastreia a aceitação com 95.3% de precisão.</p>
-            </div>
+    <div class="wrap">
+      <div class="stats">
+        <div class="stat reveal"><div class="stat-num" data-count="802">802</div><div class="stat-label">configurações quantizadas, podadas ou perturbadas</div></div>
+        <div class="stat reveal d1"><div class="stat-num" data-count="1.05" data-dec="2">1,05</div><div class="stat-label">flips medianos por unidade de variação total</div></div>
+        <div class="stat reveal d2"><div class="stat-num"><span data-count="4">4</span>×</div><div class="stat-label">variação do fator de conversão do KL entre modelos e corpora</div></div>
+        <div class="stat reveal d3"><div class="stat-num"><span data-count="11">11</span>% <span class="muted" style="font-weight:400">vs</span> <span data-count="1">1</span>%</div><div class="stat-label">pares de compressores ordenados errado entre relatórios, KL vs TV</div></div>
+      </div>
+    </div>
+
+    <!-- Teaser -->
+    <section id="headline">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">O resultado principal</span>
+          <h2>As mesmas 802 configurações, <span class="serif">medidas de dois jeitos</span></h2>
+          <p>Contra a variação total, a taxa de flips cai sobre a reta identidade. Contra √KL, ela segue uma lei de potência cujo nível depende do corpus: no GSM8K, onde poucos tokens concentram a divergência, o mesmo KL significa menos decisões alteradas do que em texto natural.</p>
         </div>
+        <figure class="figure reveal">
+          <div class="plate"><img src="assets/paper/fig_teaser.png" alt="Dois gráficos log-log com 802 configurações. À esquerda, a taxa de flips contra a variação total cai sobre y = x. À direita, a taxa de flips contra a raiz do KL, com os pontos do GSM8K deslocados abaixo dos de texto natural." loading="lazy" width="1200" height="600"></div>
+          <figcaption><b>Figura 1.</b> (a) Flips contra a variação total por token: uma reta, y = x, sem constante ajustada. (b) Flips contra √KL: o corpus desloca a reta.</figcaption>
+        </figure>
+      </div>
     </section>
 
-    <!-- Benchmark Section -->
-    <section class="benchmark-section">
-        <span class="section-label">Aderência Universal</span>
-        <h2 class="section-title">Validado em todos os Compressores Tradicionais</h2>
-        <p class="section-desc">Testamos o limite geométrico contra as principais técnicas de Poda e Quantização da literatura. Na janela comum onde as famílias coexistem, 8 de 9 métodos têm variação máxima de apenas 1.6%. Apenas Layer Removal altera a geometria significativamente.</p>
-        
-        <div class="benchmark-wrapper">
-            <table class="bm-table">
-                <thead>
-                    <tr>
-                        <th class="bm-rank"></th>
-                        <th>COMPRESSOR</th>
-                        <th>FAMILY</th>
-                        <th>FLIPS VS REF. LAW</th>
-                        <th>95% CI</th>
-                        <th>REFS</th>
-                    </tr>
-                </thead>
+    <!-- Findings -->
+    <section id="findings">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Contribuições</span>
+          <h2>Quatro resultados</h2>
+          <p>Medidos por teacher forcing: nas mesmas posições e com os mesmos prefixos, a divergência entre o modelo denso e uma cópia perturbada, e a frequência com que o token arg-max muda.</p>
+        </div>
+        <div class="findings">
+          <article class="finding reveal">
+            <div class="num">01</div>
+            <h3>A variação total se lê como decisões</h3>
+            <p>Os flips por unidade de variação total têm mediana 1,05 nas nove famílias, sem constante ajustada. Um limite isotrópico de ruído pequeno, que depende só das distribuições do modelo denso, explica por que o valor fica perto de um.</p>
+            <div class="metric"><b>0,89–1,29</b><span>faixa que cobre 95% das configurações</span></div>
+          </article>
+          <article class="finding reveal d1">
+            <div class="num">02</div>
+            <h3>O KL só se lê como decisões dentro de um corpus</h3>
+            <p>Dentro de uma referência (um modelo em um corpus), nove famílias compartilham uma única curva de raiz quadrada. Entre modelos e corpora, o coeficiente varia quatro vezes, então o KL ordena errado os compressores comparados entre relatórios oito vezes mais que a variação total.</p>
+            <div class="metric"><b>1,6–2,6×</b><span>deslocamento entre corpora de um mesmo modelo</span></div>
+          </article>
+          <article class="finding reveal">
+            <div class="num">03</div>
+            <h3>Por quê: o KL tira a média antes da raiz</h3>
+            <p>Uma decomposição exata atribui a maior parte da dependência do KL em relação ao corpus à média sobre tokens (um fator de Jensen). Estatísticas de primeira ordem em cada token, como a distância de Hellinger, têm a mesma estabilidade da variação total, mas raramente aparecem nos relatórios.</p>
+            <div class="metric"><b>1,33× · 1,54× · 4,0×</b><span>dispersão entre referências: TV, Hellinger, √KL</span></div>
+          </article>
+          <article class="finding reveal d1">
+            <div class="num">04</div>
+            <h3>Prevê a decodificação especulativa gulosa</h3>
+            <p>A variação total medida por teacher forcing prevê a concordância gulosa de um draft sem calibração por tarefa. O KL precisa ser calibrado na tarefa e ainda erra de duas a três vezes e meia mais.</p>
+            <div class="metric"><b>1,1–2,4%</b><span>erro médio na aceitação no vLLM</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mechanism -->
+    <section id="mechanism">
+      <div class="wrap">
+        <div class="split">
+          <div class="reveal">
+            <span class="eyebrow">Mecanismo</span>
+            <h2>Por que uma <span class="serif">raiz quadrada</span></h2>
+            <p>Uma perturbação pequena move cada logit por uma quantidade pequena ε. A diferença entre os dois tokens líderes, que decide se o arg-max muda, se move proporcionalmente a ε. O KL é mínimo quando nada muda, então só pode crescer como ε². Comparar algo que cresce como ε com algo que cresce como ε² dá uma raiz quadrada.</p>
+            <div class="eq">
+              KL ≈ ½ Var<sub>p</sub>(Δz) &nbsp;·&nbsp; segunda ordem<br>
+              𝔼|Δg| = A·√(2 KL) &nbsp;·&nbsp; primeira ordem<br>
+              flips ≈ ρ<sub>0</sub> 𝔼|Δg| / 2, &nbsp; κ ≈ ρ<sub>0</sub> A / √2
+            </div>
+            <p>Aqui, ρ<sub>0</sub> é a densidade das margens top-2 em zero e A é um fator de anisotropia. O expoente ½ decorre das ordens. O que precisa ser medido é se A é comparável entre perturbações.</p>
+            <ul class="checklist">
+              <li>A é quase constante dentro de uma referência (coeficiente de variação mediano de 2,6%).</li>
+              <li>O A de todo compressor estruturado fica entre 0,915 e 1,005 do A de um ruído gaussiano isotrópico com a mesma norma de Fisher.</li>
+              <li>Os compressores empurram as margens para baixo tanto quanto para cima: a fração de deslocamentos negativos tem mediana 0,504 em 372 configurações.</li>
+            </ul>
+          </div>
+          <figure class="figure reveal d1">
+            <div class="plate"><img src="assets/paper/fig_orders.png" alt="Gráfico log-log: o deslocamento da margem, a raiz do KL e a TV crescem com inclinação 1 no tamanho da perturbação; o KL cresce com inclinação 2." loading="lazy" width="650" height="560"></div>
+            <figcaption><b>Ordens.</b> Em uma distribuição de próximo token com margem top-2 de 0,5 nat, o deslocamento da margem, √KL e TV crescem linearmente em ε, enquanto o KL cresce quadraticamente. Um flip exige um deslocamento em direção à fronteira maior que a margem.</figcaption>
+          </figure>
+        </div>
+
+        <div class="split flip" style="margin-top: clamp(4rem, 8vw, 6rem);">
+          <div class="reveal">
+            <span class="eyebrow">Regime</span>
+            <h2>Onde a relação <span class="serif">se curva</span></h2>
+            <p>flips/√KL é plano até cerca de 0,25 nat, o que vai de 8 a 3 bits na escada de arredondamento e cobre a maioria dos modelos de 4 bits. Acima disso entram termos de ordem mais alta, e a raiz passa a subestimar cada vez mais os flips. Com pesos de 2 bits, em que 94–100% das decisões mudam, nenhuma lei de potência no KL continua valendo.</p>
+            <ul class="checklist">
+              <li><b>De 10⁻³ a 0,25 nat:</b> as duas estatísticas se comportam como descrito.</li>
+              <li><b>Até cerca de 2 nats:</b> √KL subestima os flips (1,21× o valor da janela acima de 1 nat), enquanto a TV continua a lê-los.</li>
+              <li><b>Em 2 bits:</b> os flips por unidade de TV ficam em 0,75–0,98 do valor da janela. Só a TV fica dentro de 25%.</li>
+            </ul>
+          </div>
+          <figure class="figure reveal d1">
+            <div class="plate"><img src="assets/paper/fig_regime.png" alt="flips sobre a raiz do KL sobe acima de 0,25 nat, enquanto flips sobre TV fica perto do valor da janela." loading="lazy"></div>
+            <figcaption><b>Regime.</b> flips/√KL (azul) e flips/TV (vermelho) de cada configuração, divididos pelo valor da referência na janela de κ. A linha pontilhada marca 0,25 nat.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Families -->
+    <section id="families">
+      <div class="wrap">
+        <div class="split split-table">
+          <div class="reveal">
+            <span class="eyebrow">Nove famílias</span>
+            <h2>Mecanismos sem relação, <span class="serif">uma só curva</span></h2>
+            <p>Se a divergência resumisse por completo o dano às decisões, a família do método não acrescentaria nada com o KL fixo. O desvio de cada família em relação à curva da sua referência fica dentro de 5% na amostra e de 5,5% quando a família é excluída do ajuste.</p>
+            <p>Após a correção de Holm sobre as nove famílias, só a remoção de camadas continua significativa, o que bate com seu fator de anisotropia menor. Na janela em que todas as famílias coexistem, oito delas ficam dentro de 1,6%.</p>
+          </div>
+          <div class="table-card reveal d1">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Família</th><th>Na amostra</th><th>Excluída</th><th>IC 95% (excluída)</th></tr></thead>
                 <tbody>
-                    <tr style="background: rgba(39, 201, 63, 0.1); border-left: 3px solid #27c93f;">
-                        <td class="bm-rank">🏆 1</td>
-                        <td class="bm-model" style="color: #27c93f;">AWQ<span class="bm-sub">Activation-aware Weight Quantization</span></td>
-                        <td>Quantization</td>
-                        <td class="bm-highlight" style="color: #27c93f;">0.997</td>
-                        <td>[0.989, 1.005]</td>
-                        <td>52</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">🥈 2</td>
-                        <td class="bm-model">GPTQ<span class="bm-sub">Post-Training Quantization</span></td>
-                        <td>Quantization</td>
-                        <td class="bm-highlight">0.996</td>
-                        <td>[0.988, 1.003]</td>
-                        <td>52</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">🥉 3</td>
-                        <td class="bm-model">Wanda<span class="bm-sub">Pruning by Weights and Activations</span></td>
-                        <td>Pruning</td>
-                        <td class="bm-highlight">1.005</td>
-                        <td>[0.991, 1.020]</td>
-                        <td>51</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">4</td>
-                        <td class="bm-model">Magnitude<span class="bm-sub">Pruning</span></td>
-                        <td>Pruning</td>
-                        <td class="bm-highlight">0.995</td>
-                        <td>[0.982, 1.009]</td>
-                        <td>51</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">5</td>
-                        <td class="bm-model">Gaussian Noise<span class="bm-sub">Control</span></td>
-                        <td>Control</td>
-                        <td class="bm-highlight">0.993</td>
-                        <td>[0.985, 1.001]</td>
-                        <td>52</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">6</td>
-                        <td class="bm-model">RTN<span class="bm-sub">Round-To-Nearest</span></td>
-                        <td>Rounding</td>
-                        <td class="bm-highlight">1.008 ▲</td>
-                        <td>[1.004, 1.012]</td>
-                        <td>52</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">7</td>
-                        <td class="bm-model">KV-cache<span class="bm-sub">Quantization</span></td>
-                        <td>Cache</td>
-                        <td class="bm-highlight">0.989 ▼</td>
-                        <td>[0.982, 0.997]</td>
-                        <td>51</td>
-                    </tr>
-                    <tr>
-                        <td class="bm-rank">8</td>
-                        <td class="bm-model">SparseGPT<span class="bm-sub">Massive Language Models can be Accurately Pruned</span></td>
-                        <td>Pruning</td>
-                        <td class="bm-highlight">1.023 ▲</td>
-                        <td>[1.009, 1.038]</td>
-                        <td>50</td>
-                    </tr>
-                    <tr style="background: rgba(255, 95, 86, 0.05); border-left: 3px solid #ff5f56;">
-                        <td class="bm-rank">9</td>
-                        <td class="bm-model" style="color: #ff5f56;">Layer Removal<span class="bm-sub">Structural</span></td>
-                        <td>Structural</td>
-                        <td class="bm-highlight" style="color: #ff5f56;">0.950 ▼</td>
-                        <td>[0.927, 0.973]</td>
-                        <td>14</td>
-                    </tr>
+                  <tr class="sig"><td>Remoção de camadas</td><td>0,950</td><td>0,945 <span class="bar"><i style="left:22.5%"></i></span></td><td>[0,920; 0,970]</td></tr>
+                  <tr><td>Quant. do KV-cache</td><td>0,988</td><td>0,986 <span class="bar"><i style="left:43%"></i></span></td><td>[0,974; 0,997]</td></tr>
+                  <tr><td>Magnitude</td><td>0,990</td><td>0,990 <span class="bar"><i style="left:45%"></i></span></td><td>[0,955; 1,026]</td></tr>
+                  <tr><td>Ruído gaussiano</td><td>0,996</td><td>0,995 <span class="bar"><i style="left:47.5%"></i></span></td><td>[0,980; 1,011]</td></tr>
+                  <tr><td>GPTQ</td><td>0,996</td><td>0,996 <span class="bar"><i style="left:48%"></i></span></td><td>[0,988; 1,005]</td></tr>
+                  <tr><td>AWQ</td><td>1,003</td><td>1,003 <span class="bar"><i style="left:51.5%"></i></span></td><td>[0,991; 1,016]</td></tr>
+                  <tr><td>Wanda</td><td>1,005</td><td>1,007 <span class="bar"><i style="left:53.5%"></i></span></td><td>[0,970; 1,044]</td></tr>
+                  <tr><td>RTN</td><td>1,009</td><td>1,022 <span class="bar"><i style="left:61%"></i></span></td><td>[1,005; 1,039]</td></tr>
+                  <tr><td>SparseGPT</td><td>1,019</td><td>1,024 <span class="bar"><i style="left:62%"></i></span></td><td>[1,001; 1,048]</td></tr>
                 </tbody>
-            </table>
+              </table>
+            </div>
+            <div class="table-note">Desvio multiplicativo da taxa de flips de cada família em relação à curva ajustada da sua referência (802 configurações, intervalos agrupados por modelo). <em>Excluída</em> reajusta a curva sem a família. A barra vai de 0,90 a 1,10.</div>
+          </div>
         </div>
+      </div>
     </section>
 
-    <!-- Benchmark de Velocidade Section -->
-    <section class="benchmark-section">
-        <span class="section-label">⚡ Performance</span>
-        <h2 class="section-title">Até 31× Mais Rápido que Avaliação Tradicional</h2>
-        <p class="section-desc">A fórmula TV substitui um forward pass completo (gerando logits para cada token) por um cálculo fechado instantâneo — com erro de previsão menor que 1% em quantização agressiva (4-bit RTN).</p>
-        
-        <div style="text-align: center; margin: 2rem 0;">
-            <img src="assets/benchmark_tv_speed.png" alt="Benchmark: Fórmula TV é até 31x mais rápida que avaliação tradicional" style="max-width: 100%; width: 700px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);" />
+    <!-- Out of sample -->
+    <section id="out-of-sample">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Fora da amostra</span>
+          <h2>Dois testes pré-registrados <span class="serif">marcam os limites</span></h2>
+          <p>As previsões foram registradas antes de os dados serem gerados, e cada corpus foi avaliado uma única vez. A variação total manteve a razão próxima de um. O KL manteve a lei da raiz quadrada, mas perdeu o fator de conversão e a curva compartilhada entre famílias.</p>
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 800px; margin: 2rem auto 0;">
-            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
-                <div style="font-size: 2.5rem; font-weight: 800; color: #00f0ff;">31×</div>
-                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Mais rápido que geração tradicional</div>
+        <div class="cards">
+          <article class="card reveal">
+            <div class="tag">Teste 1 · domínio novo</div>
+            <h3>Corpus de código reservado (MBPP), 8 modelos</h3>
+            <p>O expoente (0,48–0,57) e a razão flips/TV (0,98–1,05) se mantiveram nos oito modelos. A curva compartilhada entre famílias no KL falhou no teste registrado para todos os oito.</p>
+            <div class="vs">
+              <div class="good"><div class="k">Desvio vs TV</div><div class="v">2,7%</div></div>
+              <div class="bad"><div class="k">Desvio vs √KL</div><div class="v">7,5%</div></div>
             </div>
-            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
-                <div style="font-size: 2.5rem; font-weight: 800; color: #27c93f;">&lt;1%</div>
-                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Erro de previsão (4-bit RTN)</div>
+          </article>
+          <article class="card reveal d1">
+            <div class="tag">Teste 2 · no mundo real</div>
+            <h3>Três modelos novos, kernels reais</h3>
+            <p>Qwen2.5-14B, Mistral-Nemo-12B e Granite-3.3-8B rodaram com os kernels NF4/int8 do bitsandbytes e com checkpoints AWQ/GPTQ publicados. A razão ficou na faixa em 37 de 38 checkpoints, mas caiu abaixo de um em código no Mistral-Nemo (0,91) e, por pouco, no Granite.</p>
+            <div class="vs">
+              <div class="good"><div class="k">Erro entre corpora, TV</div><div class="v">9,5–15,6%</div></div>
+              <div class="bad"><div class="k">Erro entre corpora, KL</div><div class="v">34–53%</div></div>
             </div>
-            <div class="uc-card" style="text-align: center; padding: 1.5rem;">
-                <div style="font-size: 2.5rem; font-weight: 800; color: #7000ff;">0.01s</div>
-                <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Tempo da fórmula TV</div>
-            </div>
+          </article>
+          <article class="card reveal d2">
+            <div class="tag">Post hoc · extensão</div>
+            <h3>Mixture of experts e QAT</h3>
+            <p>As 8 referências de OLMoE-1B-7B e Qwen3-30B-A3B cumprem os dois critérios. No Gemma-3 Q4_0, o QAT reduz o KL para 0,29–0,57 do obtido com quantização pós-treino, mas a taxa de flips só cai para 0,55–0,77. Um ganho reportado em KL exagera o ganho em decisões.</p>
+            <div class="big">8 <small>de 8 referências MoE</small></div>
+          </article>
         </div>
+      </div>
     </section>
 
-    <!-- Início Rápido Section -->
-    <section class="quick-start-section">
-        <span class="section-label">Início Rápido</span>
-        <h2 class="section-title">Rodando em Minutos</h2>
-        <p class="section-desc">Sem configurações complexas. Nosso repositório utiliza Docker para orquestrar todos os testes em segundos diretamente na sua máquina ou cluster SLURM.</p>
-        
-        <div class="qs-container">
-            <div class="qs-card">
-                <div class="qs-num">01</div>
-                <div class="qs-content">
-                    <h3 class="qs-title">Instalar</h3>
-                    <p class="qs-desc">Clone o repositório e construa o ambiente de container docker.</p>
-                    <div class="qs-terminal">
-                        <span>make docker-build</span>
-                        <svg class="qs-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    </div>
-                </div>
+    <!-- Speculative decoding -->
+    <section id="speculative">
+      <div class="wrap">
+        <div class="split flip">
+          <div class="reveal">
+            <span class="eyebrow">Aplicação</span>
+            <h2>Decodificação especulativa, <span class="serif">o consumidor de concordância exata</span></h2>
+            <p>Um decodificador especulativo só aceita um token do draft quando ele coincide com o do alvo, então a fidelidade de decisão tem preço direto. Rodamos 23 self-drafts comprimidos e 20 drafts de outros modelos sobre dez alvos. Depois servimos dois alvos Qwen3 no vLLM, com kernels reais, em prompts de GSM8K e MBPP disjuntos do texto de calibração.</p>
+            <div class="vs" style="margin: 1.4rem 0;">
+              <div class="good"><div class="k">TV · aceitação gulosa</div><div class="v">1,1–2,4%</div></div>
+              <div class="bad"><div class="k">κ√KL · em código</div><div class="v">18–22%</div></div>
+              <div class="good"><div class="k">TV · ranking dos drafts (ρ)</div><div class="v">0,86–1,00</div></div>
+              <div class="bad"><div class="k">κ√KL · ranking dos drafts (ρ)</div><div class="v">0,60–0,86</div></div>
             </div>
-            
-            <div class="qs-card">
-                <div class="qs-num">02</div>
-                <div class="qs-content">
-                    <h3 class="qs-title">Configurar & Rodar</h3>
-                    <p class="qs-desc">Execute uma varredura de precisão total para qualquer Modelo HF suportado dinamicamente.</p>
-                    <div class="qs-terminal">
-                        <span>make docker-run TARGET="grid MODEL=Qwen/Qwen3-4B DEVICE=cuda:0"</span>
-                        <svg class="qs-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    </div>
-                </div>
-            </div>
+            <p style="font-size:0.92rem;">Nenhuma das duas estatísticas escolhe o draft mais rápido de forma confiável: kernels quantizados não custam em proporção aos seus bytes, então a escolha também exige um modelo de custo dos kernels.</p>
+          </div>
+          <figure class="figure reveal d1">
+            <div class="plate"><img src="assets/paper/fig_speculative.png" alt="Taxa de aceitação medida contra a prevista por 1 menos TV em 43 pares de draft; os pontos ficam perto da reta identidade." loading="lazy" width="640" height="580"></div>
+            <figcaption><b>Aceitação.</b> Aceitação gulosa medida contra a previsão por 1 − TV (rodadas i.i.d., sem constante) em 23 self-drafts comprimidos e 20 drafts de outros modelos no GSM8K.</figcaption>
+          </figure>
         </div>
+      </div>
     </section>
 
-    <section class="stats-row">
-        <div class="stat-card">
-            <div class="stat-number">72B+</div>
-            <div class="stat-label">Escala do Modelo</div>
-            <div class="stat-desc">Validado até Qwen2.5-72B</div>
+    <!-- What to report -->
+    <section id="report">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Na prática</span>
+          <h2>O que reportar, <span class="serif">e quando</span></h2>
+          <p>As duas divergências saem da mesma passada com teacher forcing, então nenhuma é mais barata de calcular. A escolha depende de quem vai ler o número.</p>
         </div>
-        <div class="stat-card">
-            <div class="stat-number">10+</div>
-            <div class="stat-label">Compressores</div>
-            <div class="stat-desc">Quantização, Poda e Ataques</div>
+        <div class="cards">
+          <article class="card reveal">
+            <div class="tag">Concordância exata</div>
+            <h3>Drafts especulativos, saídas em cache, testes de regressão</h3>
+            <p>Reporte a própria taxa de flips nos prompts da tarefa. Para triar drafts, use a variação total, que previu a aceitação no vLLM com erro de 1,1–2,4%.</p>
+          </article>
+          <article class="card reveal d1">
+            <div class="tag">Entre corpora ou relatórios</div>
+            <h3>Reporte a variação total, por corpus</h3>
+            <p>O KL ordena errado os compressores em 8,1% dos pares entre corpora de um modelo e em 10,8% entre modelos e corpora. A variação total, em 0,7% e 1,3%.</p>
+          </article>
+          <article class="card reveal d2">
+            <div class="tag">Dentro de um corpus</div>
+            <h3>Aqui o KL ordena os métodos corretamente</h3>
+            <p>Com um corpus e uma referência densa, o KL ordena errado só 0,2% dos pares. A variação total ao lado dá a escala em decisões.</p>
+          </article>
         </div>
-        <div class="stat-card">
-            <div class="stat-number">5.7x</div>
-            <div class="stat-label">Gap para o Oráculo</div>
-            <div class="stat-desc">Teto de otimização restante</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">~25%</div>
-            <div class="stat-label">Reparo é Re-amostragem</div>
-            <div class="stat-desc">Correções aparentes de respostas erradas são puro re-sampling de trajetórias, um efeito igualado por ruído Gaussiano</div>
-        </div>
+      </div>
     </section>
 
-    <section id="simulator" class="tool-section">
-        <div class="section-header">
-            <h2>Execute o Teste Comparativo (Medições Reais)</h2>
-            <p>Valide a fórmula GLOD você mesmo contra DADOS EMPÍRICOS REAIS de 802 configurações medidas. Escolha um domínio, um modelo e uma técnica de compressão, depois defina uma restrição de KL alvo. O simulador irá puxar <strong>a medição real mais próxima</strong> do nosso dataset para comparar estritamente ao limite matemático.</p>
+    <!-- Explorer -->
+    <section id="explorer">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Interativo</span>
+          <h2>Explore as <span class="serif">802 medições</span></h2>
+          <p>Escolha uma referência (um modelo em um corpus) e compare as duas leituras: flips contra a variação total, sem constante, ou flips contra κ·√KL, com κ ajustado naquela referência (Eq. 4). Clique em qualquer ponto para inspecioná-lo.</p>
         </div>
-
-        <div class="calculator-grid">
-            <div class="panel">
-                <div class="panel-title">1. Seleção de Referência</div>
-                
-                <div class="form-group">
-                    <label for="corpus-select">Distribuição / Domínio</label>
-                    <select id="corpus-select"></select>
-                </div>
-
-                <div class="form-group">
-                    <label for="model-select">Modelo Alvo</label>
-                    <select id="model-select"></select>
-                </div>
-
-                <div class="form-group">
-                    <label>Densidade de Margens (κ)</label>
-                    <div style="font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan); font-size: 1.2rem; font-weight: bold; margin-top: 0.5rem;" id="kappa-val">0.000</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Medido empiricamente para este modelo+corpus.</div>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 2rem 0;">
-
-                <div class="panel-title" style="margin-bottom: 1.5rem;">2. Comparação Empírica</div>
-
-                <div class="form-group">
-                    <label for="compressor-select">Família do Compressor</label>
-                    <select id="compressor-select">
-                        <option value="gptq">Quantização (GPTQ)</option>
-                        <option value="awq">Quantização (AWQ)</option>
-                        <option value="wanda">Poda (Wanda)</option>
-                        <option value="sparsegpt">Poda (SparseGPT)</option>
-                        <option value="rtn">Arredondamento (RTN)</option>
-                        <option value="kv">Quantização KV-Cache (kv)</option>
-                        <option value="magnitude">Poda por Magnitude (magnitude)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="kl-input">Divergência KL Alvo</label>
-                    <input type="number" id="kl-input" min="0.001" max="1.5" step="0.001" value="0.100">
-                </div>
-
-                <button id="run-btn" class="btn-primary" style="width: 100%; margin-top: 1rem;">Buscar Medição Real</button>
-
-                <div id="results-box">
-                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                        Configuração Real Mais Próxima: <span id="res-config" style="color:#fff; font-weight:bold;">-</span><br>
-                        Divergência KL Efetiva: <span id="res-kl" style="color:#fff;">-</span> nat
-                    </div>
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
-                        <span style="font-size: 0.9rem;">Fórmula GLOD (<span style="color:var(--accent-cyan);">Teórico</span>)</span>
-                        <span style="color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: bold;" id="res-glod">0.00%</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
-                        <span style="font-size: 0.9rem;">Variação Total / Flips (<span style="color:#fff;">Medição Empírica</span>)</span>
-                        <span style="color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: bold;" id="res-empirical">0.00%</span>
-                    </div>
-                    
-                    <div style="text-align: right; color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem;">
-                        Diferença: <span id="res-error" style="font-weight: bold;">0.00pp</span>
-                    </div>
-                </div>
-
+        <div class="explorer reveal">
+          <div class="panel">
+            <h3>Referência</h3>
+            <div class="field"><label for="x-corpus">Corpus</label><select id="x-corpus"></select></div>
+            <div class="field"><label for="x-model">Modelo</label><select id="x-model"></select></div>
+            <div class="kappa"><span>κ (mediana da janela)</span><b id="x-kappa">–</b></div>
+            <div class="kappa" style="margin-top:-1.2rem;border-top:0;"><span>flips / TV medianos</span><b id="x-ratio">–</b></div>
+            <h3>Encontrar uma configuração</h3>
+            <div class="field"><label for="x-family">Família</label><select id="x-family"></select></div>
+            <div class="field"><label for="x-kl">KL alvo (nat)</label><input type="number" id="x-kl" min="0.0001" max="20" step="0.001" value="0.1"></div>
+            <button class="btn btn-dark" id="x-go" type="button" style="width:100%;justify-content:center;">Medição mais próxima</button>
+            <div class="readout" id="x-readout" aria-live="polite">
+              <div class="cfg"><b id="x-cfg">–</b> · KL <b id="x-klv">–</b></div>
+              <div class="row"><span>Taxa de flips medida</span><b id="x-flip">–</b></div>
+              <div class="row hl"><span>Variação total</span><span><b id="x-tv">–</b><span class="err" id="x-tv-err"></span></span></div>
+              <div class="row"><span>κ·√KL</span><span><b id="x-kl-pred">–</b><span class="err" id="x-kl-err"></span></span></div>
+              <div class="row"><span>flips / TV</span><b id="x-pr">–</b></div>
             </div>
-
-            <div class="panel">
-                <div class="panel-title">Gráfico Interativo de Validação (Dados Reais)</div>
-                <div class="chart-container">
-                    <canvas id="ewsChart"></canvas>
-                </div>
-                <div class="legend-box" id="dynamic-legend">
-                    <!-- populated dynamically -->
-                </div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3 style="margin:0;">Taxa de flips, log–log</h3>
+              <div class="seg" role="group" aria-label="eixo x">
+                <button type="button" data-view="tv" aria-pressed="true">vs TV</button>
+                <button type="button" data-view="kl" aria-pressed="false">vs √KL</button>
+              </div>
             </div>
+            <div class="chart-box"><canvas id="x-chart" aria-label="Gráfico de dispersão da taxa de flips contra a divergência escolhida"></canvas></div>
+            <div class="legend" id="x-legend"></div>
+            <p class="hint">κ é ajustado na amostra de cada referência, o que favorece √KL aqui. Entre referências, κ varia quatro vezes, enquanto a reta da TV não muda.</p>
+          </div>
         </div>
+      </div>
     </section>
 
-    <script src="data.js"></script>
-    <script>
-        const corpusSelect = document.getElementById('corpus-select');
-        const modelSelect = document.getElementById('model-select');
-        const kappaVal = document.getElementById('kappa-val');
-        const compressorSelect = document.getElementById('compressor-select');
-        const klInput = document.getElementById('kl-input');
-        const runBtn = document.getElementById('run-btn');
-        const resultsBox = document.getElementById('results-box');
-        
-        const ctx = document.getElementById('ewsChart').getContext('2d');
-        let chart;
-        let currentKappa = 0;
-        let selectedMeasurement = null;
+    <!-- Scope -->
+    <section id="scope">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Escopo</span>
+          <h2>O que essas estatísticas <span class="serif">não</span> medem</h2>
+        </div>
+        <div class="cards two">
+          <article class="card reveal">
+            <div class="tag">Decisões ≠ acurácia</div>
+            <h3>Fidelidade ao modelo denso não é qualidade em benchmark</h3>
+            <p>No Gemma-3-4B, com a mesma divergência de 0,10 nat no GSM8K e quase a mesma taxa de flips, a poda por magnitude custa 33,3 pontos de acurácia, enquanto o Wanda ganha 4,8. Estatísticas por posição também não dizem como as decisões alteradas se acumulam na geração livre.</p>
+          </article>
+          <article class="card reveal d1">
+            <div class="tag">Janela medida</div>
+            <h3>10⁻³ a cerca de 2 nats · 8 a 3 bits · 1B–72B</h3>
+            <p>Os resultados cobrem transformers densos só-decoder com mudanças pós-treino em pesos fixos ou no KV cache, decodificação gulosa, teacher forcing, cinco corpora em duas línguas e um corpus de código reservado. MoE e QAT entram só como extensão post hoc. Fine-tuning, destilação e entradas multimodais não foram testados.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-        const familyColors = {
-            'gptq': '#0055ff', 'awq': '#0088ff', 
-            'wanda': '#7000ff', 'sparsegpt': '#a000ff', 'magnitude': '#d000ff',
-            'rtn': '#ffffff', 'camada': '#ffaa00', 'kv': '#00ffaa', 'gauss': '#ff0055'
-        };
+    <!-- Reproduce -->
+    <section id="reproduce">
+      <div class="wrap">
+        <div class="split" style="align-items:start;">
+          <div class="reveal">
+            <span class="eyebrow">Reproduzir</span>
+            <h2>Meça o seu próprio <span class="serif">par denso–comprimido</span></h2>
+            <p>O código publicado reporta as três estatísticas (variação total, flips e KL) para qualquer modelo denso e checkpoint comprimido que compartilhem o tokenizador. Ele sinaliza uma razão flips/TV fora dos 95% centrais das configurações publicadas (0,89–1,29).</p>
+          </div>
+          <div class="steps">
+            <div class="step reveal">
+              <div class="n">01</div>
+              <div>
+                <h3>Instalar</h3>
+                <p>Clone o repositório e instale o pacote <code>glod</code>.</p>
+                <div class="cmd"><span class="prompt">$</span><code>git clone https://github.com/beatrizalmeidaf/elastic_weight_streaming &amp;&amp; cd elastic_weight_streaming &amp;&amp; pip install -e .</code><button class="copy" type="button" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button></div>
+              </div>
+            </div>
+            <div class="step reveal d1">
+              <div class="n">02</div>
+              <div>
+                <h3>Gerar o relatório de um par</h3>
+                <p>Grava TV, flips e KL por corpus, flips/TV, κ, o fator de Jensen J e estimativas de aceitação especulativa, em JSON e Markdown.</p>
+                <div class="cmd"><span class="prompt">$</span><code>python -m glod report --dense Qwen/Qwen3-4B --compressed cfg:gptq4 --out report/</code><button class="copy" type="button" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button></div>
+              </div>
+            </div>
+            <div class="step reveal d2">
+              <div class="n">03</div>
+              <div>
+                <h3>Reproduzir a grade</h3>
+                <p>Gera o corpus de referência e avalia todas as famílias de perturbação por teacher forcing. O <code>Makefile</code> também tem alvos para Slurm e Docker.</p>
+                <div class="cmd"><span class="prompt">$</span><code>make corpus grid MODEL=Qwen/Qwen3-4B DEVICE=cuda:0</code><button class="copy" type="button" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        function initData() {
-            corpusSelect.innerHTML = '';
-            for(let c in GLOD_DATA.measurements) {
-                let opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c.toUpperCase();
-                corpusSelect.appendChild(opt);
-            }
-            if(GLOD_DATA.measurements['mix']) corpusSelect.value = 'mix';
-            updateModels();
-        }
+    <!-- FAQ -->
+    <section id="faq">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Perguntas frequentes</h2>
+        </div>
+        <div class="faq reveal">
+          <details>
+            <summary>O GLOD é um benchmark de acurácia?</summary>
+            <div class="answer">Não. O GLOD mede fidelidade ao modelo denso: quantas decisões de próximo token mudam sob teacher forcing. O "dano" do nome quer dizer desvio distribucional, não perda de capacidade. Dois compressores com a mesma taxa de flips podem diferir em dezenas de pontos de acurácia.</div>
+          </details>
+          <details>
+            <summary>A variação total é mais barata de calcular do que rodar os modelos?</summary>
+            <div class="answer">Não. O KL e a variação total saem da mesma passada com teacher forcing nos dois modelos. Se você consegue rodar os dois modelos na tarefa, conte os flips diretamente. A variação total importa quando você <em>lê</em> um número reportado em vez de medi-lo, por exemplo ao comparar resultados entre artigos, leaderboards ou corpora.</div>
+          </details>
+          <details>
+            <summary>Então por que não reportar só o KL?</summary>
+            <div class="answer">Dentro de um corpus e de uma referência densa, o KL ordena os compressores corretamente (0,2% dos pares ordenados errado). Entre corpora ou modelos, sua conversão em decisões varia quatro vezes, porque o KL tira a média sobre os tokens antes de a raiz ser aplicada. De dois compressores cujas taxas de flips diferem em pelo menos 10%, o KL dá a menor divergência ao que muda mais decisões em 11% dos casos. A variação total, em 1%.</div>
+          </details>
+          <details>
+            <summary>Vale para larguras de bit muito baixas?</summary>
+            <div class="answer">A relação de raiz quadrada do KL é plana até cerca de 0,25 nat e quebra com pesos de 2 bits, em que 94–100% das decisões mudam. Os flips por unidade de variação total ficam dentro de 25% do valor da janela em toda a faixa.</div>
+          </details>
+          <details>
+            <summary>Como as divergências são calculadas?</summary>
+            <div class="answer">Sobre os 64 tokens mais prováveis da distribuição densa mais uma cauda agregada. No vocabulário completo, KL e TV são, na mediana, 1,003 e 1,001 vezes maiores. Logits em bf16 criam empates exatos entre top-1 e top-2, então toda análise de margens usa referências reavaliadas com uma camada de saída em fp32.</div>
+          </details>
+          <details>
+            <summary>Quais modelos foram estudados?</summary>
+            <div class="answer">19 checkpoints de seis famílias: Gemma-3 (1B, 4B, 12B, 27B), Qwen3 (4B, 8B, 14B), Qwen2.5 (7B, 72B), Mistral-7B e Mistral-Small-24B, Phi-3.5-mini e phi-4, OLMo-2 (1B, 7B, 13B, base e instruct) e Llama-3-8B-Instruct. Outros três (Qwen2.5-14B, Mistral-Nemo-12B, Granite-3.3-8B) e dois modelos MoE foram usados só fora da amostra.</div>
+          </details>
+        </div>
+      </div>
+    </section>
 
-        function updateModels() {
-            let c = corpusSelect.value;
-            modelSelect.innerHTML = '';
-            for(let m in GLOD_DATA.measurements[c]) {
-                let opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
-                modelSelect.appendChild(opt);
-            }
-            if(GLOD_DATA.measurements[c]['Qwen3-4B']) modelSelect.value = 'Qwen3-4B';
-            updateKappa();
-        }
+    <!-- Cite -->
+    <section id="cite">
+      <div class="wrap" style="max-width: 820px;">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Citar</span>
+          <h2>BibTeX</h2>
+        </div>
+        <div class="cite reveal">
+          <pre id="bibtex">@misc{glod2026,
+  title  = {How Divergence Becomes Decision Flips in Compressed Language Models},
+  author = {Anonymous},
+  year   = {2026},
+  note   = {Under review. Code: https://github.com/beatrizalmeidaf/elastic_weight_streaming}
+}</pre>
+          <button class="copy" type="button" data-target="#bibtex" aria-label="Copiar BibTeX"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button>
+        </div>
+      </div>
+    </section>
 
-        function updateKappa() {
-            let c = corpusSelect.value;
-            let m = modelSelect.value;
-            currentKappa = GLOD_DATA.kappas[`${c}|${m}`] || 0;
-            kappaVal.textContent = currentKappa.toFixed(4);
-            selectedMeasurement = null;
-            resultsBox.style.display = 'none';
-            updateChart();
-        }
+    <!-- CTA -->
+    <section class="cta">
+      <div class="wrap">
+        <h2 class="reveal">Reporte a variação total <span class="serif grad-text">ao lado do KL.</span></h2>
+        <p class="reveal d1">Um número a mais por corpus diz a quem lê quantas decisões do modelo denso mudaram.</p>
+        <div class="cmd reveal d2"><span class="prompt">$</span><code>python -m glod report --dense &lt;modelo&gt; --compressed &lt;checkpoint&gt; --out report/</code><button class="copy" type="button" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button></div>
+        <div class="hero-cta reveal d3">
+          <a class="btn btn-dark" href="https://github.com/beatrizalmeidaf/elastic_weight_streaming" target="_blank" rel="noopener">Ver o código</a>
+          <a class="btn btn-ghost" href="https://github.com/beatrizalmeidaf/elastic_weight_streaming/blob/main/README.md" target="_blank" rel="noopener">Ler a documentação</a>
+        </div>
+      </div>
+    </section>
 
-        corpusSelect.addEventListener('change', updateModels);
-        modelSelect.addEventListener('change', updateKappa);
+  </main>
 
-        function updateChart() {
-            let c = corpusSelect.value;
-            let m = modelSelect.value;
-            let pts = GLOD_DATA.measurements[c][m] || [];
-            
-            const theoryData = [];
-            let maxKl = 0.25;
-            pts.forEach(p => { if(p.kl > maxKl) maxKl = p.kl; });
-            for (let kl = 0; kl <= maxKl * 1.1; kl += 0.005) {
-                theoryData.push({ x: kl, y: currentKappa * Math.sqrt(kl) });
-            }
+  <footer>
+    <div class="wrap">
+      <div class="foot">
+        <div>
+          <img src="assets/logo.png" alt="GLOD" width="86" height="28">
+          <p style="max-width: 22rem;">Como a divergência vira flips de decisão em modelos de linguagem comprimidos. Código, dados e figuras do artigo.</p>
+        </div>
+        <div>
+          <h4>Artigo</h4>
+          <ul>
+            <li><a href="#findings">Resultados</a></li>
+            <li><a href="#mechanism">Mecanismo</a></li>
+            <li><a href="#out-of-sample">Fora da amostra</a></li>
+            <li><a href="#speculative">Decodificação especulativa</a></li>
+            <li><a href="#scope">Escopo</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Ferramentas</h4>
+          <ul>
+            <li><a href="#explorer">Explorador de dados</a></li>
+            <li><a href="#reproduce">Reproduzir</a></li>
+            <li><a href="#cite">Citar</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Projeto</h4>
+          <ul>
+            <li><a href="https://github.com/beatrizalmeidaf/elastic_weight_streaming" target="_blank" rel="noopener">GitHub</a></li>
+            <li><a href="https://github.com/beatrizalmeidaf/elastic_weight_streaming/blob/main/README.md" target="_blank" rel="noopener">Documentação</a></li>
+            <li><a href="index.html" hreflang="en">English</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <span>GLOD · Geometric Law of Damage</span>
+        <span>Medido por teacher forcing em referências gulosas. Fidelidade, não acurácia.</span>
+      </div>
+    </div>
+  </footer>
 
-            let datasets = [];
-            let families = {};
-            pts.forEach(p => {
-                if(!families[p.family]) families[p.family] = [];
-                families[p.family].push({ x: p.kl, y: p.flip, raw: p });
-            });
-
-            const legendBox = document.getElementById('dynamic-legend');
-            legendBox.innerHTML = `<div class="legend-item"><div class="dot" style="background: var(--accent-cyan);"></div> Limite GLOD</div>`;
-
-            for(let f in families) {
-                let color = familyColors[f] || '#aaaaaa';
-                datasets.push({
-                    label: f.toUpperCase(),
-                    data: families[f],
-                    backgroundColor: color,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    order: 2
-                });
-                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: ${color};"></div> ${f.toUpperCase()}</div>`;
-            }
-
-            if(selectedMeasurement) {
-                datasets.push({
-                    label: 'Sua Seleção',
-                    data: [{ x: selectedMeasurement.kl, y: selectedMeasurement.flip }],
-                    backgroundColor: '#39FF14',
-                    borderColor: '#39FF14',
-                    borderWidth: 2,
-                    pointRadius: 10,
-                    pointStyle: 'star',
-                    pointHoverRadius: 10,
-                    order: 1
-                });
-                legendBox.innerHTML += `<div class="legend-item"><div class="dot" style="background: #39FF14; border: 1px solid #fff;"></div> Seleção</div>`;
-            }
-
-            datasets.unshift({
-                label: 'Limite Teórico GLOD',
-                data: theoryData,
-                type: 'line',
-                borderColor: '#00f0ff',
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.4,
-                order: 3
-            });
-
-            if (chart) {
-                chart.data.datasets = datasets;
-                chart.options.scales.x.max = maxKl * 1.05;
-                chart.update();
-            } else {
-                chart = new Chart(ctx, {
-                    type: 'scatter',
-                    data: { datasets: datasets },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 300 },
-                        scales: {
-                            x: {
-                                type: 'linear', position: 'bottom',
-                                title: { display: true, text: 'KL Divergence (nat)', color: '#a0a0b0' },
-                                min: 0, max: maxKl * 1.05,
-                                grid: { color: 'rgba(255,255,255,0.05)' },
-                                ticks: { color: '#a0a0b0' }
-                            },
-                            y: {
-                                title: { display: true, text: 'Variação Total / Flips (Fração)', color: '#a0a0b0' },
-                                min: 0,
-                                grid: { color: 'rgba(255,255,255,0.05)' },
-                                ticks: { color: '#a0a0b0' }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(15, 15, 25, 0.9)',
-                                borderColor: 'rgba(0, 240, 255, 0.3)', borderWidth: 1, padding: 10,
-                                callbacks: {
-                                    label: function(ctx) {
-                                        if(ctx.dataset.type === 'line') return `Teoria: KL=${ctx.parsed.x.toFixed(3)}, Flip=${(ctx.parsed.y * 100).toFixed(1)}%`;
-                                        let raw = ctx.raw.raw;
-                                        if(raw) return `${raw.family} (${raw.config}): KL=${raw.kl.toFixed(4)}, Flip=${(raw.flip * 100).toFixed(2)}%`;
-                                        return `${ctx.dataset.label}: KL=${ctx.parsed.x.toFixed(4)}, Flip=${(ctx.parsed.y * 100).toFixed(2)}%`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        runBtn.addEventListener('click', () => {
-            let c = corpusSelect.value;
-            let m = modelSelect.value;
-            let pts = GLOD_DATA.measurements[c][m] || [];
-            let targetKL = parseFloat(klInput.value);
-            let targetFam = compressorSelect.value;
-
-            let familyPts = pts.filter(p => p.family === targetFam);
-            if(familyPts.length === 0) {
-                alert(`Nenhuma medição encontrada para a família '${targetFam}' no modelo ${m} (${c}). Tente outro compressor ou modelo.`);
-                return;
-            }
-
-            let closest = familyPts[0];
-            let minDiff = Math.abs(closest.kl - targetKL);
-            for(let i=1; i<familyPts.length; i++) {
-                let diff = Math.abs(familyPts[i].kl - targetKL);
-                if(diff < minDiff) {
-                    minDiff = diff;
-                    closest = familyPts[i];
-                }
-            }
-
-            selectedMeasurement = closest;
-            const glodPredicted = currentKappa * Math.sqrt(closest.kl);
-            const empiricalResult = closest.flip;
-            const diff = empiricalResult - glodPredicted;
-
-            document.getElementById('res-config').textContent = `${closest.family.toUpperCase()} (${closest.config})`;
-            document.getElementById('res-kl').textContent = closest.kl.toFixed(4);
-            
-            document.getElementById('res-glod').textContent = (glodPredicted * 100).toFixed(2) + "%";
-            document.getElementById('res-empirical').textContent = (empiricalResult * 100).toFixed(2) + "%";
-            
-            let errElem = document.getElementById('res-error');
-            errElem.textContent = (diff > 0 ? "+" : "") + (diff * 100).toFixed(3) + " pontos percentuais";
-            errElem.style.color = Math.abs(diff) > 0.02 ? "#ff5f56" : "#00ffaa";
-            
-            resultsBox.style.display = "block";
-            updateChart();
-        });
-
-        
-        document.querySelectorAll('.qs-copy').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const text = e.currentTarget.previousElementSibling.textContent.trim();
-                navigator.clipboard.writeText(text);
-                const originalColor = e.currentTarget.style.color;
-                e.currentTarget.style.color = '#27c93f';
-                setTimeout(() => e.currentTarget.style.color = originalColor, 1500);
-            });
-        });
-
-        initData();
-    
-    </script>
+  <script src="data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="assets/site.js"></script>
 </body>
 </html>
