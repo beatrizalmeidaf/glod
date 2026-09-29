@@ -51,7 +51,6 @@ FAM_COLORS = {"rtn": "#1f77b4", "gaussiano": "#aec7e8", "gptq": "#d62728", "awq"
 
 
 def save(fig, name: str) -> None:
-    # bbox_inches='tight' garante que as legendas externas nao sejam cortadas
     fig.savefig(FIG / f"{name}.pdf", bbox_inches='tight')
     fig.savefig(FIG / f"{name}.png", bbox_inches='tight', dpi=300)
     plt.close(fig)
@@ -63,7 +62,6 @@ def fig1() -> None:
     rows = [r for r in law["rows"] if r["ref"] == r["model"] and r["family"] != "outro modelo"
             and shown(r["ref"])]
     
-    # Aumentando a largura para acomodar a legenda enorme fora do grafico
     fig, ax = plt.subplots(figsize=(6.5, 4.0))
     
     seen = set()
@@ -115,7 +113,6 @@ def fig1() -> None:
     ax.set_ylabel("fração de decisões trocadas")
     ax.set_ylim(5e-4, 0.8)
     
-    # Colocando a legenda COMPLETAMENTE FORA do grafico a direita
     ax.legend(fontsize=7, ncol=1, loc="center left", bbox_to_anchor=(1.02, 0.5))
     save(fig, "fig1_lei")
 
@@ -251,10 +248,9 @@ def fig5() -> None:
         
     axes[0].set_ylabel("acurácia GSM8K (%)")
     
-    # Legenda fora do plot para nao repetir, no topo, mas sem esmagar
     fig.legend(lines, labels, loc='lower center', bbox_to_anchor=(0.5, 0.95), ncol=3, frameon=False, fontsize=8)
     
-    fig.subplots_adjust(top=0.75, bottom=0.15, left=0.08, right=0.98) # Ajuste manual do layout para caber legenda
+    fig.subplots_adjust(top=0.75, bottom=0.15, left=0.08, right=0.98)
     save(fig, "fig5_adaptativo")
 
 

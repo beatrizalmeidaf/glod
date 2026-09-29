@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Secao 7: adaptatividade por token em geracao real, contra a fronteira estatica.
+"""Adaptatividade por token em geracao real, contra a fronteira estatica.
 
 Para cada politica adaptativa (cascade/predictive a um limiar de entropia), interpola
 a fronteira ESTATICA (precisao mista entre projecoes, sem troca por token) no MESMO

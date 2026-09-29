@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Dark mode styling
 plt.style.use('dark_background')
 fig, ax = plt.subplots(figsize=(8, 5))
 fig.patch.set_facecolor('#0a0a10')
@@ -25,13 +24,12 @@ ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, label='Baseline Hones
 
 ax.legend(facecolor='#15151a', edgecolor='#ffffff', framealpha=0.8)
 
-# Add values on top of bars
 def autolabel(rects):
     for rect in rects:
         height = rect.get_height()
         ax.annotate(f'{height}x',
                     xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),  # 3 points vertical offset
+                    xytext=(0, 3),
                     textcoords="offset points",
                     ha='center', va='bottom', color='white', fontsize=10)
 

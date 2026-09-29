@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Dark mode styling
 plt.style.use('dark_background')
 fig, ax = plt.subplots(figsize=(9, 5))
 fig.patch.set_facecolor('#0a0a10')
@@ -11,14 +10,12 @@ methods = ['GPTQ', 'AWQ', 'Wanda', 'RTN', 'SparseGPT']
 offsets = [-0.00148, -0.00146, 0.00372, 0.00368, 0.01182]
 se = [0.00179, 0.00193, 0.00335, 0.00096, 0.00321]
 
-# Convert to percentage points for better readability on chart
 offsets_pct = [x * 100 for x in offsets]
 se_pct = [x * 100 for x in se]
 
 x = np.arange(len(methods))
 colors = ['#0055ff', '#0055ff', '#7000ff', '#ffffff', '#7000ff']
 
-# Bar chart with error bars
 rects = ax.bar(x, offsets_pct, yerr=se_pct, capsize=6, color=colors, alpha=0.8, edgecolor='none', error_kw=dict(ecolor='#a0a0b0', lw=2, capsize=6, capthick=2))
 
 ax.set_ylabel('Desvio vs GLOD Teórico (% de Flips)', color='#a0a0b0', fontsize=12)
@@ -29,7 +26,6 @@ ax.axhline(y=0.0, color='#00f0ff', linestyle='-', linewidth=2, label='Fórmula G
 
 ax.legend(facecolor='#15151a', edgecolor='#333333', framealpha=0.9, loc='upper left')
 
-# Add values on top/bottom of bars
 for rect, offset in zip(rects, offsets_pct):
     height = rect.get_height()
     y_pos = height + 0.15 if height > 0 else height - 0.25

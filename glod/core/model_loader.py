@@ -26,7 +26,6 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_BASE_MODEL = "google/gemma-3-4b-it"
 DEFAULT_FULL_MODEL = "google/gemma-3-12b-it"
 
-# /home tem pouco espaco livre nesta DGX; o cache vai para o array RAID.
 from glod.paths import CACHE_DIR as DEFAULT_CACHE_DIR
 
 DTYPE_ALIASES: dict[str, torch.dtype] = {

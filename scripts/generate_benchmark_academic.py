@@ -50,7 +50,6 @@ def analyze(rows):
     abs_errors = [abs(r["flip"] - r["tv"]) for r in rows if r["tv"] > 1e-6]
     rel_errors = [abs(r["flip"] - r["tv"]) / r["flip"] for r in rows if r["flip"] > 1e-6]
 
-    # Per-corpus stats
     by_corpus = defaultdict(list)
     for r in rows:
         if r["tv"] > 1e-6:
@@ -74,7 +73,6 @@ def analyze(rows):
             "r2": r2,
         }
 
-    # Global R²
     valid = [r for r in rows if r["tv"] > 1e-6]
     mean_flip_g = statistics.mean([r["flip"] for r in valid])
     ss_res_g = sum((r["flip"] - r["tv"]) ** 2 for r in valid)
@@ -118,7 +116,6 @@ def make_figure(rows, stats):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    # -- Style --
     plt.rcParams.update({
         "font.family": "sans-serif",
         "font.sans-serif": ["DejaVu Sans", "Helvetica", "Arial"],
@@ -209,7 +206,6 @@ def make_figure(rows, stats):
     ax_b.axvline(1.0, color="#ffffff", linewidth=1, linestyle="--", alpha=0.5,
                  label="Perfect (1.000)")
 
-    # Shade the 90% CI
     p5 = sorted(ratios)[int(len(ratios) * 0.05)]
     p95 = sorted(ratios)[int(len(ratios) * 0.95)]
     ax_b.axvspan(p5, p95, alpha=0.08, color="#00f0ff",
@@ -252,15 +248,12 @@ def make_figure(rows, stats):
     # ===== Panel D: Speedup comparison =====
     ax_d = fig.add_subplot(gs_bot[0, 1])
 
-    # Cost model: traditional evaluation requires a forward pass per (model, config) pair.
-    # TV uses pre-computed logit statistics — no additional forward pass.
-    # Data from benchmark_final.log: Qwen1.5-0.5B on MMLU subsets.
-    # Timing scales linearly with model size; ratio stays constant.
+    # Illustrative costs, not measurements: only 0.5B (0.31 s, benchmark_final.log) was
+    # timed; the other sizes are extrapolated linearly. The TV time excludes the
+    # teacher-forced passes that produce the logit statistics, which KL needs as well
+    # (paper, Discussion), so this panel is not a claim from the paper.
     models = ["0.5B\n(Qwen1.5)", "4B\n(Qwen3)", "8B\n(Llama-3)", "14B\n(Qwen3)", "72B\n(Qwen2.5)"]
-    # Approximate forward-pass times per sample (seconds) — measured or extrapolated
-    # 0.5B: 0.31s (measured), 4B: ~2.5s, 8B: ~5s, 14B: ~10s, 72B: ~50s
     trad_times = [0.31, 2.5, 5.0, 10.0, 50.0]
-    # TV formula: O(V) per token, independent of model; dominated by I/O of pre-computed stats
     tv_times = [0.01, 0.01, 0.01, 0.01, 0.01]
     speedups = [t / v for t, v in zip(trad_times, tv_times)]
 
@@ -272,7 +265,6 @@ def make_figure(rows, stats):
     bars_tv = ax_d.bar(x_d + w / 2, tv_times, w, color="#00f0ff", alpha=0.85,
                         label="TV formula (closed-form)", edgecolor="none")
 
-    # Annotate speedup
     for i, (bt, sp) in enumerate(zip(bars_trad, speedups)):
         ax_d.annotate(f"{sp:.0f}×",
                       xy=(bt.get_x() + w, bt.get_height()),
@@ -335,7 +327,6 @@ def make_figure(rows, stats):
                   transform=ax_e.transAxes)
         y -= h
 
-    # -- Suptitle --
     fig.suptitle("Total Variation as a Zero-Cost Flip Rate Predictor",
                  fontsize=18, fontweight="bold", color="#ffffff", y=0.98)
     fig.text(0.5, 0.95,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""P1: consolida a evidencia adversarial da Secao 4.
+"""P1: consolida a evidencia adversarial.
 
 Junta, por modelo:
   * kappa dos compressores HONESTOS (mediana das configs do estudo de fidelidade);
@@ -367,7 +367,7 @@ def main() -> int:
             se = np.std(v, ddof=1) / math.sqrt(len(v)) if len(v) > 1 else 0.0
             print(f"    {mode:8s}: {np.mean(v):.2f}x  IC95 [{np.mean(v) - 1.96*se:.2f}, "
                   f"{np.mean(v) + 1.96*se:.2f}]  min {min(v):.2f} max {max(v):.2f}  (n={len(v)})")
-    out["paired_by_kl"] = paired          # so o corpus do paper (mix): e o numero da Secao 4
+    out["paired_by_kl"] = paired          # so o corpus do paper (mix): e o numero publicado
     out["paired_by_corpus"] = by_corpus
 
     print("\n  comparacao no MESMO conjunto de teste (tokens que o ataque nunca viu):")

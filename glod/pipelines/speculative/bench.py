@@ -146,7 +146,6 @@ def main(argv=None) -> int:
     _summaries(results)
     (out_dir / "results.json").write_text(json.dumps(results, indent=1))
 
-    # Generate and save the plot
     try:
         plot_path = out_dir / "benchmark_final_real.png"
         _plot_results(results, plot_path)

@@ -57,7 +57,7 @@ lint:               ## ruff no pacote
 datasets:           ## baixa GSM8K, MMLU (en), wikitext-2 para GLOD_DATA/datasets
 	$(PY) scripts/download_datasets.py
 
-# ------------------------------------------------- fidelidade (Secoes 2 e 3)
+# ------------------------------------------------------------- fidelidade
 corpus:             ## corpus greedy da referencia (MODEL, CORPUS)
 	$(GLOD) grid gen --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --n-prompts $(N_PROMPTS)
 
@@ -89,7 +89,7 @@ fungibility:        ## kappa por subconjunto de modulos, a KL casado
 
 fidelity-all: corpus grid analyze slope domain flip-dirs  ## a cadeia de fidelidade inteira
 
-# ------------------------------------------------------ adversarial (Secao 4)
+# ------------------------------------------------------------ adversarial
 adv:                ## ataque multicamada, maligno e benigno (KL, STEPS, RANK, SEED)
 	$(GLOD) adv-multi --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS) --seed $(SEED) \
 	    --steps $(STEPS) --rank $(RANK) --kl-budget $(KL) --modes malign benign \
@@ -106,12 +106,12 @@ adv-no-norm:        ## ablacao sem a escala de saida (P7)
 adv-single:         ## ataque de 1 camada, rank completo
 	$(GLOD) adv-single --model $(MODEL) --device $(DEVICE) --corpus $(CORPUS)
 
-adv-report:         ## consolida a Secao 4 -> analysis/adversarial.json
+adv-report:         ## consolida o ataque adversarial -> analysis/adversarial.json
 	$(GLOD) adv-report
 
 adversarial-all: adv adv-fp32 adv-no-norm adv-report  ## ataque + ablacoes + relatorio
 
-# ------------------------------------------------- tarefa e especulativa (5 e 6)
+# -------------------------------------------------- tarefa e especulativa
 matched-kl:         ## equivalencia a KL casado + TOST
 	$(GLOD) matched-kl --model $(MODEL) --device $(DEVICE)
 
@@ -127,7 +127,7 @@ spec-bench:         ## especulativa com relogio
 spec-law:           ## os tres previsores -> analysis/spec_law.json
 	$(GLOD) spec-law
 
-# ------------------------------------------------------- adaptativo (Secao 7)
+# ------------------------------------------------------------- adaptativo
 adaptive-bits:      ## A1-A2 (teacher forcing)
 	$(GLOD) adaptive-bits
 

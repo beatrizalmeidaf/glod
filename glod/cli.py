@@ -44,24 +44,24 @@ STAGES: dict[str, str] = {
     "wild-check": "glod.pipelines.fidelity.wild_check",
     "moe-routing": "glod.pipelines.fidelity.moe_routing",
     "ext-report": "glod.pipelines.fidelity.ext_report",
-    # ataque adversarial (Secao 4)
+    # ataque adversarial
     "adv-single": "glod.pipelines.adversarial.single_layer",
     "adv-multi": "glod.pipelines.adversarial.multi_layer",
     "adv-report": "glod.pipelines.adversarial.report",
     "rank-ablation": "glod.pipelines.adversarial.rank_ablation",
-    # equivalencia condicional em tarefa (Secao 5)
+    # equivalencia condicional em tarefa
     "matched-kl": "glod.pipelines.tasks.matched_kl",
     "crack": "glod.pipelines.tasks.crack_gsm8k",
     "semantic-judge": "glod.pipelines.tasks.semantic_judge",
     "closedloop": "glod.pipelines.tasks.closedloop",
     "compound": "glod.pipelines.tasks.compound",   # a lei de um passo compoe em geracao livre?
-    # decodificacao especulativa (Secao 6)
+    # decodificacao especulativa
     "amq": "glod.pipelines.compress.amq",           # quantizacao ciente do arg-max
     "amq-eval": "glod.pipelines.compress.amq_eval",
     "spec-bench": "glod.pipelines.speculative.bench",
     "spec-law": "glod.pipelines.speculative.law",
     "draft-select": "glod.pipelines.speculative.draft_select",
-    # adaptatividade por token (Secao 7)
+    # adaptatividade por token
     "adaptive-alpha": "glod.pipelines.adaptive.alpha",
     "adaptive-bits": "glod.pipelines.adaptive.bits",
     "adaptive-closedloop": "glod.pipelines.adaptive.closedloop",

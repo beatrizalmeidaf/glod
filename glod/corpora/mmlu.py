@@ -119,6 +119,6 @@ def resolve_choice_ids(
     return ids
 
 
-# NOTA: a massa de probabilidade nos 4 ids agora e calculada por batch dentro
-# de `glod.scoring.score_choices` (chave "choice_mass" dos diagnosticos), para
-# nao precisar materializar a distribuicao do vocabulario inteiro.
+# A massa de probabilidade nos 4 ids e calculada por batch em
+# `glod.core.scoring.score_choices` (chave "choice_mass" dos diagnosticos), para
+# nao materializar a distribuicao do vocabulario inteiro.
