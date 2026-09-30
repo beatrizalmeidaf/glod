@@ -28,7 +28,10 @@ results/figs/*
 figs_old/
 
 # Documentation
-docs/
+docs/*
+!docs/paper/
+docs/paper/*
+!docs/paper/numbers.json
 skills/
 web/
 
