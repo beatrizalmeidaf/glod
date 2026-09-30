@@ -277,11 +277,11 @@ make docker-run TARGET="grid MODEL=Qwen/Qwen3-4B DEVICE=cuda:0"
 ## Citation
 
 ```bibtex
-@misc{glod2026,
+@misc{felicio2026glod,
   title  = {How Divergence Becomes Decision Flips in Compressed Language Models},
-  author = {Anonymous},
+  author = {Felicio, Beatriz Almeida},
   year   = {2026},
-  note   = {Under review. Code: https://github.com/beatrizalmeidaf/glod}
+  note   = {arXiv preprint. Code: https://github.com/beatrizalmeidaf/glod}
 }
 ```
 
