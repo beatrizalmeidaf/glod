@@ -8,10 +8,10 @@
 
 [![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![build](https://github.com/beatrizalmeidaf/glod/actions/workflows/test.yml/badge.svg)](https://github.com/beatrizalmeidaf/glod/actions/workflows/test.yml)
-[![paper](https://img.shields.io/badge/paper-under%20review-red.svg)](#citation)
+[![paper](https://img.shields.io/badge/arXiv-2610.00694-b31b1b.svg)](https://arxiv.org/abs/2610.00694)
 [![simulator](https://img.shields.io/badge/try-Simulator-blue.svg)](https://github.com/beatrizalmeidaf/glod/tree/site-review)
 
-Code and data for the paper *How Divergence Becomes Decision Flips in Compressed Language Models* (under review).
+Code and data for the paper *How Divergence Becomes Decision Flips in Compressed Language Models* ([arXiv:2610.00694](https://arxiv.org/abs/2610.00694)).
 
 </div>
 
@@ -277,11 +277,14 @@ make docker-run TARGET="grid MODEL=Qwen/Qwen3-4B DEVICE=cuda:0"
 ## Citation
 
 ```bibtex
-@misc{felicio2026glod,
-  title  = {How Divergence Becomes Decision Flips in Compressed Language Models},
-  author = {Felicio, Beatriz Almeida},
-  year   = {2026},
-  note   = {arXiv preprint. Code: https://github.com/beatrizalmeidaf/glod}
+@misc{felicio2026divergencedecisionflipscompressed,
+      title={How Divergence Becomes Decision Flips in Compressed Language Models}, 
+      author={Beatriz Almeida Felicio},
+      year={2026},
+      eprint={2610.00694},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2610.00694}, 
 }
 ```
 
